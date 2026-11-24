@@ -1,0 +1,640 @@
+{
+  "phone": {
+    "valid": [
+      {
+        "input": "8123 4567",
+        "country": "NI",
+        "e164": "+50581234567",
+        "national": "8123 4567",
+        "international": "+505 8123 4567",
+        "region": "NI",
+        "type": "mobile"
+      },
+      {
+        "input": "2222-2222",
+        "country": "NI",
+        "e164": "+50522222222",
+        "national": "2222 2222",
+        "international": "+505 2222 2222",
+        "region": "NI",
+        "type": "fixed"
+      },
+      {
+        "input": "+505 8888 8888",
+        "country": "CR",
+        "e164": "+50588888888",
+        "national": "8888 8888",
+        "international": "+505 8888 8888",
+        "region": "NI",
+        "type": "mobile"
+      },
+      {
+        "input": "00505 7712 3456",
+        "country": "NI",
+        "e164": "+50577123456",
+        "national": "7712 3456",
+        "international": "+505 7712 3456",
+        "region": "NI",
+        "type": "mobile"
+      },
+      {
+        "input": "+50251234567",
+        "country": null,
+        "e164": "+50251234567",
+        "national": "5123 4567",
+        "international": "+502 5123 4567",
+        "region": "GT",
+        "type": "mobile"
+      },
+      {
+        "input": "2250 1234",
+        "country": "GT",
+        "e164": "+50222501234",
+        "national": "2250 1234",
+        "international": "+502 2250 1234",
+        "region": "GT",
+        "type": "fixed"
+      },
+      {
+        "input": "622 1234",
+        "country": "BZ",
+        "e164": "+5016221234",
+        "national": "622-1234",
+        "international": "+501 622-1234",
+        "region": "BZ",
+        "type": "mobile"
+      },
+      {
+        "input": "7012 3456",
+        "country": "SV",
+        "e164": "+50370123456",
+        "national": "7012 3456",
+        "international": "+503 7012 3456",
+        "region": "SV",
+        "type": "mobile"
+      },
+      {
+        "input": "9123 4567",
+        "country": "HN",
+        "e164": "+50491234567",
+        "national": "9123-4567",
+        "international": "+504 9123-4567",
+        "region": "HN",
+        "type": "mobile"
+      },
+      {
+        "input": "(+506) 8312-3456",
+        "country": null,
+        "e164": "+50683123456",
+        "national": "8312 3456",
+        "international": "+506 8312 3456",
+        "region": "CR",
+        "type": "mobile"
+      },
+      {
+        "input": "2222 2222",
+        "country": "CR",
+        "e164": "+50622222222",
+        "national": "2222 2222",
+        "international": "+506 2222 2222",
+        "region": "CR",
+        "type": "fixed"
+      },
+      {
+        "input": "6123-4567",
+        "country": "PA",
+        "e164": "+50761234567",
+        "national": "6123-4567",
+        "international": "+507 6123-4567",
+        "region": "PA",
+        "type": "mobile"
+      }
+    ],
+    "invalid": [
+      {
+        "input": "",
+        "country": "NI",
+        "options": {},
+        "error": "format"
+      },
+      {
+        "input": "hola",
+        "country": "NI",
+        "options": {},
+        "error": "format"
+      },
+      {
+        "input": "1234",
+        "country": "NI",
+        "options": {},
+        "error": "too_short"
+      },
+      {
+        "input": "8123 4567 8901",
+        "country": "NI",
+        "options": {},
+        "error": "too_long"
+      },
+      {
+        "input": "8123 4567",
+        "country": null,
+        "options": {},
+        "error": "country"
+      },
+      {
+        "input": "+1 415 555 2671",
+        "country": "NI",
+        "options": {},
+        "error": "country"
+      },
+      {
+        "input": "+52 55 1234 5678",
+        "country": null,
+        "options": {},
+        "error": "country"
+      },
+      {
+        "input": "0123 4567",
+        "country": "NI",
+        "options": {},
+        "error": "invalid"
+      },
+      {
+        "input": "2222 2222",
+        "country": "NI",
+        "options": {
+          "type": "mobile"
+        },
+        "error": "type"
+      },
+      {
+        "input": "+502 5123 4567",
+        "country": "NI",
+        "options": {
+          "countries": ["NI", "CR"]
+        },
+        "error": "country"
+      }
+    ],
+    "validWithOptions": [
+      {
+        "input": "8123 4567",
+        "country": "NI",
+        "options": {
+          "type": "mobile"
+        }
+      },
+      {
+        "input": "+506 8312 3456",
+        "country": "NI",
+        "options": {
+          "countries": ["NI", "CR"],
+          "type": "mobile"
+        }
+      }
+    ]
+  },
+  "money": {
+    "format": [
+      {
+        "amount": "1250.5",
+        "currency": "NIO",
+        "options": {},
+        "expected": "C$ 1,250.50"
+      },
+      {
+        "amount": 180,
+        "currency": "NIO",
+        "options": {},
+        "expected": "C$ 180.00"
+      },
+      {
+        "amount": "0",
+        "currency": "GTQ",
+        "options": {},
+        "expected": "Q 0.00"
+      },
+      {
+        "amount": "1234567.89",
+        "currency": "HNL",
+        "options": {},
+        "expected": "L 1,234,567.89"
+      },
+      {
+        "amount": "1234567.5",
+        "currency": "CRC",
+        "options": {},
+        "expected": "₡ 1 234 567,50"
+      },
+      {
+        "amount": "999.99",
+        "currency": "BZD",
+        "options": {},
+        "expected": "BZ$ 999.99"
+      },
+      {
+        "amount": "25",
+        "currency": "PAB",
+        "options": {},
+        "expected": "B/. 25.00"
+      },
+      {
+        "amount": "-15",
+        "currency": "USD",
+        "options": {},
+        "expected": "-$ 15.00"
+      },
+      {
+        "amount": 1.005,
+        "currency": "USD",
+        "options": {},
+        "expected": "$ 1.01"
+      },
+      {
+        "amount": "2.345",
+        "currency": "USD",
+        "options": {},
+        "expected": "$ 2.35"
+      },
+      {
+        "amount": "-2.345",
+        "currency": "USD",
+        "options": {},
+        "expected": "-$ 2.35"
+      },
+      {
+        "amount": "9.999",
+        "currency": "USD",
+        "options": {},
+        "expected": "$ 10.00"
+      },
+      {
+        "amount": "180",
+        "currency": "NIO",
+        "options": {
+          "decimals": "auto"
+        },
+        "expected": "C$ 180"
+      },
+      {
+        "amount": "180.5",
+        "currency": "NIO",
+        "options": {
+          "decimals": "auto"
+        },
+        "expected": "C$ 180.50"
+      },
+      {
+        "amount": "1250.5",
+        "currency": "NIO",
+        "options": {
+          "display": "code"
+        },
+        "expected": "NIO 1,250.50"
+      },
+      {
+        "amount": "1250.5",
+        "currency": "NIO",
+        "options": {
+          "display": "none"
+        },
+        "expected": "1,250.50"
+      },
+      {
+        "amount": "1250.5",
+        "currency": "nio",
+        "options": {},
+        "expected": "C$ 1,250.50"
+      }
+    ],
+    "formatErrors": [
+      {
+        "amount": "abc",
+        "currency": "NIO"
+      },
+      {
+        "amount": "1e21",
+        "currency": "NIO"
+      },
+      {
+        "amount": "10",
+        "currency": "EUR"
+      }
+    ],
+    "parse": [
+      {
+        "input": "C$ 1,250.50",
+        "currency": "NIO",
+        "expected": "1250.50"
+      },
+      {
+        "input": "1250",
+        "currency": "NIO",
+        "expected": "1250.00"
+      },
+      {
+        "input": "1,250",
+        "currency": "NIO",
+        "expected": "1250.00"
+      },
+      {
+        "input": "  NIO 99.9 ",
+        "currency": "NIO",
+        "expected": "99.90"
+      },
+      {
+        "input": "0.5",
+        "currency": "USD",
+        "expected": "0.50"
+      },
+      {
+        "input": "$20",
+        "currency": "USD",
+        "expected": "20.00"
+      },
+      {
+        "input": "₡1 234,5",
+        "currency": "CRC",
+        "expected": "1234.50"
+      },
+      {
+        "input": "1 234 567,00",
+        "currency": "CRC",
+        "expected": "1234567.00"
+      },
+      {
+        "input": "1234.5",
+        "currency": "CRC",
+        "expected": "1234.50"
+      },
+      {
+        "input": "B/. 3.75",
+        "currency": "PAB",
+        "expected": "3.75"
+      },
+      {
+        "input": "",
+        "currency": "NIO",
+        "expected": null
+      },
+      {
+        "input": "abc",
+        "currency": "NIO",
+        "expected": null
+      },
+      {
+        "input": "1.250,50",
+        "currency": "NIO",
+        "expected": null
+      },
+      {
+        "input": "12.345",
+        "currency": "NIO",
+        "expected": null
+      },
+      {
+        "input": "1,2,3",
+        "currency": "NIO",
+        "expected": null
+      },
+      {
+        "input": "12,34",
+        "currency": "NIO",
+        "expected": null
+      },
+      {
+        "input": ".5",
+        "currency": "NIO",
+        "expected": null
+      },
+      {
+        "input": "-50",
+        "currency": "USD",
+        "expected": null
+      },
+      {
+        "input": "$20",
+        "currency": "NIO",
+        "expected": null
+      },
+      {
+        "input": "1,234.5",
+        "currency": "CRC",
+        "expected": null
+      }
+    ],
+    "minorUnits": [
+      {
+        "amount": "12.34",
+        "currency": "USD",
+        "minor": 1234,
+        "back": "12.34"
+      },
+      {
+        "amount": "180",
+        "currency": "NIO",
+        "minor": 18000,
+        "back": "180.00"
+      },
+      {
+        "amount": "-0.5",
+        "currency": "CRC",
+        "minor": -50,
+        "back": "-0.50"
+      },
+      {
+        "amount": 0.1,
+        "currency": "USD",
+        "minor": 10,
+        "back": "0.10"
+      }
+    ]
+  },
+  "currencyCodes": [
+    {
+      "code": "NIO",
+      "country": null,
+      "expected": true
+    },
+    {
+      "code": "nio",
+      "country": null,
+      "expected": true
+    },
+    {
+      "code": "EUR",
+      "country": null,
+      "expected": false
+    },
+    {
+      "code": "USD",
+      "country": "NI",
+      "expected": true
+    },
+    {
+      "code": "GTQ",
+      "country": "NI",
+      "expected": false
+    },
+    {
+      "code": "PAB",
+      "country": "PA",
+      "expected": true
+    },
+    {
+      "code": "NIO",
+      "country": "XX",
+      "expected": false
+    }
+  ],
+  "dates": {
+    "parse": [
+      {
+        "input": "24/11/2026",
+        "expected": "2026-11-24"
+      },
+      {
+        "input": "1/2/2026",
+        "expected": "2026-02-01"
+      },
+      {
+        "input": "24-11-2026",
+        "expected": "2026-11-24"
+      },
+      {
+        "input": " 29/02/2028 ",
+        "expected": "2028-02-29"
+      },
+      {
+        "input": "29/02/2000",
+        "expected": "2000-02-29"
+      },
+      {
+        "input": "29/02/2026",
+        "expected": null
+      },
+      {
+        "input": "29/02/1900",
+        "expected": null
+      },
+      {
+        "input": "31/04/2026",
+        "expected": null
+      },
+      {
+        "input": "00/01/2026",
+        "expected": null
+      },
+      {
+        "input": "24/13/2026",
+        "expected": null
+      },
+      {
+        "input": "24/11-2026",
+        "expected": null
+      },
+      {
+        "input": "2026-11-24",
+        "expected": null
+      },
+      {
+        "input": "24/11/26",
+        "expected": null
+      },
+      {
+        "input": "24/11/2026 10:00",
+        "expected": null
+      },
+      {
+        "input": "",
+        "expected": null
+      }
+    ],
+    "format": [
+      {
+        "date": "2026-11-24",
+        "expected": "24/11/2026"
+      },
+      {
+        "date": "2028-02-29",
+        "expected": "29/02/2028"
+      }
+    ],
+    "formatErrors": ["2026-02-30", "24/11/2026", "2026-1-5"],
+    "local": [
+      {
+        "instant": "2026-11-25T04:30:00Z",
+        "country": "NI",
+        "date": "2026-11-24",
+        "time": "22:30",
+        "iso": "2026-11-24T22:30:00-06:00"
+      },
+      {
+        "instant": "2026-11-25T04:30:00Z",
+        "country": "PA",
+        "date": "2026-11-24",
+        "time": "23:30",
+        "iso": "2026-11-24T23:30:00-05:00"
+      },
+      {
+        "instant": "2026-11-25T05:30:15Z",
+        "country": "PA",
+        "date": "2026-11-25",
+        "time": "00:30",
+        "iso": "2026-11-25T00:30:15-05:00"
+      },
+      {
+        "instant": "2027-01-01T03:00:00Z",
+        "country": "GT",
+        "date": "2026-12-31",
+        "time": "21:00",
+        "iso": "2026-12-31T21:00:00-06:00"
+      },
+      {
+        "instant": "2026-11-24T14:30:00-06:00",
+        "country": "CR",
+        "date": "2026-11-24",
+        "time": "14:30",
+        "iso": "2026-11-24T14:30:00-06:00"
+      }
+    ],
+    "zoned": [
+      {
+        "date": "2026-11-24",
+        "time": "14:30",
+        "country": "NI",
+        "expected": "2026-11-24T14:30:00-06:00",
+        "utc": "2026-11-24T20:30:00Z"
+      },
+      {
+        "date": "2026-11-24",
+        "time": "9:05",
+        "country": "PA",
+        "expected": "2026-11-24T09:05:00-05:00",
+        "utc": "2026-11-24T14:05:00Z"
+      }
+    ],
+    "zonedErrors": [
+      {
+        "date": "2026-11-24",
+        "time": "25:00",
+        "country": "NI"
+      },
+      {
+        "date": "2026-11-24",
+        "time": "10:60",
+        "country": "NI"
+      },
+      {
+        "date": "2026-02-30",
+        "time": "10:00",
+        "country": "NI"
+      },
+      {
+        "date": "2026-11-24",
+        "time": "10:00",
+        "country": "MX"
+      }
+    ]
+  }
+}

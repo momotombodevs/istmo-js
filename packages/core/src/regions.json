@@ -1,0 +1,97 @@
+{
+  "countries": [
+    {
+      "code": "GT",
+      "name": "Guatemala",
+      "callingCode": "502",
+      "currency": "GTQ",
+      "currencies": ["GTQ", "USD"],
+      "timezone": "America/Guatemala",
+      "utcOffset": "-06:00"
+    },
+    {
+      "code": "BZ",
+      "name": "Belice",
+      "callingCode": "501",
+      "currency": "BZD",
+      "currencies": ["BZD", "USD"],
+      "timezone": "America/Belize",
+      "utcOffset": "-06:00"
+    },
+    {
+      "code": "SV",
+      "name": "El Salvador",
+      "callingCode": "503",
+      "currency": "USD",
+      "currencies": ["USD"],
+      "timezone": "America/El_Salvador",
+      "utcOffset": "-06:00"
+    },
+    {
+      "code": "HN",
+      "name": "Honduras",
+      "callingCode": "504",
+      "currency": "HNL",
+      "currencies": ["HNL", "USD"],
+      "timezone": "America/Tegucigalpa",
+      "utcOffset": "-06:00"
+    },
+    {
+      "code": "NI",
+      "name": "Nicaragua",
+      "callingCode": "505",
+      "currency": "NIO",
+      "currencies": ["NIO", "USD"],
+      "timezone": "America/Managua",
+      "utcOffset": "-06:00"
+    },
+    {
+      "code": "CR",
+      "name": "Costa Rica",
+      "callingCode": "506",
+      "currency": "CRC",
+      "currencies": ["CRC", "USD"],
+      "timezone": "America/Costa_Rica",
+      "utcOffset": "-06:00"
+    },
+    {
+      "code": "PA",
+      "name": "Panamá",
+      "callingCode": "507",
+      "currency": "USD",
+      "currencies": ["USD", "PAB"],
+      "timezone": "America/Panama",
+      "utcOffset": "-05:00"
+    }
+  ],
+  "currencies": [
+    { "code": "GTQ", "name": "Quetzal", "symbol": "Q", "decimals": 2, "decimalSeparator": ".", "groupSeparator": "," },
+    {
+      "code": "BZD",
+      "name": "Dólar beliceño",
+      "symbol": "BZ$",
+      "decimals": 2,
+      "decimalSeparator": ".",
+      "groupSeparator": ","
+    },
+    { "code": "HNL", "name": "Lempira", "symbol": "L", "decimals": 2, "decimalSeparator": ".", "groupSeparator": "," },
+    { "code": "NIO", "name": "Córdoba", "symbol": "C$", "decimals": 2, "decimalSeparator": ".", "groupSeparator": "," },
+    {
+      "code": "CRC",
+      "name": "Colón costarricense",
+      "symbol": "₡",
+      "decimals": 2,
+      "decimalSeparator": ",",
+      "groupSeparator": "\u00a0"
+    },
+    { "code": "PAB", "name": "Balboa", "symbol": "B/.", "decimals": 2, "decimalSeparator": ".", "groupSeparator": "," },
+    {
+      "code": "USD",
+      "name": "Dólar estadounidense",
+      "symbol": "$",
+      "decimals": 2,
+      "decimalSeparator": ".",
+      "groupSeparator": ","
+    }
+  ]
+}
