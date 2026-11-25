@@ -1,4 +1,5 @@
-import { type Currency, type CurrencyCode, requireCurrency } from './regions';
+import type { Currency, CurrencyCode } from './regions';
+import { requireCurrency } from './require';
 
 /** How {@link formatMoney} labels the amount. */
 export type MoneyDisplay = 'symbol' | 'code' | 'none';
@@ -18,7 +19,8 @@ export const MAX_INTEGER_DIGITS = 30;
 
 const MAX_INPUT_LENGTH = 64;
 const DECIMAL = /^(-)?(\d+)(?:\.(\d+))?$/;
-const NBSP = ' ';
+const NBSP = '\u00a0';
+const SPACES = ' \u00a0\u202f';
 
 interface Decimal {
   readonly negative: boolean;
@@ -92,8 +94,8 @@ function escapeRegExp(text: string): string {
 }
 
 function amountPattern(target: Currency): RegExp {
-  const spaceGroup = /\s/.test(target.groupSeparator);
-  const groupSeparator = spaceGroup ? '[\\s\\u00a0]' : escapeRegExp(target.groupSeparator);
+  const spaceGroup = SPACES.includes(target.groupSeparator);
+  const groupSeparator = spaceGroup ? `[${SPACES}]` : escapeRegExp(target.groupSeparator);
   const decimalSeparator = spaceGroup
     ? `[${escapeRegExp(target.decimalSeparator)}.]`
     : escapeRegExp(target.decimalSeparator);
@@ -118,7 +120,7 @@ export function parseMoney(input: unknown, currencyCode: CurrencyCode): string |
 
   let text = input.trim();
   for (const label of [target.code, target.symbol]) {
-    const prefix = new RegExp(`^${escapeRegExp(label)}[\\s\\u00a0]*`, 'i');
+    const prefix = new RegExp(`^${escapeRegExp(label)}[${SPACES}]*`, 'i');
     if (prefix.test(text)) {
       text = text.replace(prefix, '');
       break;

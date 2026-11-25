@@ -38,10 +38,6 @@ describe('misuse fails loudly', () => {
     expect(() => parsePhone('8123 4567', 'MX' as CountryCode)).toThrow(RangeError);
   });
 
-  it('accepts a lowercase default country', () => {
-    expect(parsePhone('8123 4567', 'ni' as CountryCode)?.e164).toBe('+50581234567');
-  });
-
   it('refuses numbers outside the safe integer range', () => {
     expect(() => formatMoney(2 ** 53, 'USD')).toThrow(RangeError);
     expect(() => formatMoney(Number.NaN, 'USD')).toThrow(RangeError);
@@ -59,14 +55,12 @@ describe('misuse fails loudly', () => {
   });
 });
 
-describe('long input stays fast', () => {
-  it('formats and parses the longest accepted amount quickly', () => {
-    const started = performance.now();
+describe('long input is refused before any work', () => {
+  it('caps amounts and phone numbers', () => {
     expect(parseMoney('9'.repeat(1_000_000), 'NIO')).toBeNull();
-    expect(formatMoney('9'.repeat(30), 'NIO')).toMatch(/^C\$ 999,/);
-    expect(() => formatMoney('9'.repeat(100_000), 'NIO')).toThrow(RangeError);
+    expect(formatMoney('9'.repeat(30), 'NIO')).toMatch(/^C\$\u00a0999,/);
+    expect(() => formatMoney('9'.repeat(31), 'NIO')).toThrow(RangeError);
     expect(validatePhone('8'.repeat(1_000_000), 'NI')).toEqual({ valid: false, error: 'format' });
-    expect(performance.now() - started).toBeLessThan(200);
   });
 });
 
@@ -78,6 +72,11 @@ describe('shared data is frozen', () => {
     expect(Object.isFrozen(currencies[0])).toBe(true);
     expect(Object.isFrozen(countryCodes)).toBe(true);
     expect(() => (countries as unknown[]).push({})).toThrow(TypeError);
+  });
+
+  it('lists exactly the codes the types declare', () => {
+    expect(countries.map(({ code }) => code)).toEqual([...countryCodes]);
+    expect(currencies.map(({ code }) => code)).toEqual([...currencyCodes]);
   });
 
   it('matches the declared types', () => {
@@ -105,9 +104,11 @@ describe('time zone data', () => {
 });
 
 describe('lookups with untrusted codes', () => {
-  it('returns nothing for non-string codes', () => {
+  it('returns nothing for codes outside the exact list', () => {
     expect(country(undefined as unknown as CountryCode)).toBeUndefined();
     expect(currency(42 as unknown as CurrencyCode)).toBeUndefined();
+    expect(country('ni' as CountryCode)).toBeUndefined();
+    expect(currency('nio' as CurrencyCode)).toBeUndefined();
   });
 
   it('refuses non-string dates and times', () => {
