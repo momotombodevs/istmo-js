@@ -2,7 +2,10 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    include: ['tests/**/*.test.ts'],
+    projects: [
+      { test: { name: 'node', include: ['tests/**/*.test.ts'], exclude: ['tests/react.test.ts'] } },
+      { test: { name: 'react', include: ['tests/react.test.ts'], environment: 'happy-dom' } },
+    ],
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],

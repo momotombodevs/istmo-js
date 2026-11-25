@@ -23,6 +23,8 @@ export interface Country {
   readonly code: CountryCode;
   /** Name in Spanish, e.g. `Panamá`. */
   readonly name: string;
+  /** Flag emoji, e.g. `🇳🇮`. Windows browsers show the two letters instead of a flag. */
+  readonly flag: string;
   /** Calling code without `+`, e.g. `505`. */
   readonly callingCode: string;
   /** Main currency used for prices. */
@@ -56,8 +58,14 @@ function deepFreeze<T>(value: T): T {
   return value;
 }
 
+function flagOf(code: string): string {
+  return String.fromCodePoint(...[...code].map((letter) => 0x1f1e6 + letter.charCodeAt(0) - 65));
+}
+
 /** Every supported country, frozen. */
-export const countries: readonly Country[] = deepFreeze(data.countries as Country[]);
+export const countries: readonly Country[] = deepFreeze(
+  data.countries.map((entry) => ({ ...entry, flag: flagOf(entry.code) })) as Country[],
+);
 
 /** Every supported currency, frozen. */
 export const currencies: readonly Currency[] = deepFreeze(data.currencies as Currency[]);

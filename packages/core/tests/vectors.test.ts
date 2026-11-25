@@ -3,8 +3,10 @@ import {
   acceptsCurrency,
   type CountryCode,
   type CurrencyCode,
+  country,
   formatDate,
   formatMoney,
+  formatPhoneInput,
   fromMinorUnits,
   type IsoDate,
   isCountryCode,
@@ -16,6 +18,7 @@ import {
   parseDate,
   parseMoney,
   parsePhone,
+  phoneExample,
   today,
   toMinorUnits,
   validatePhone,
@@ -52,6 +55,14 @@ describe('phone', () => {
     ).toThrow(RangeError);
   });
 
+  it.each(vectors.phone.typing)('formats "$input" while typing in $country', ({ input, country, text, detected }) => {
+    expect(formatPhoneInput(input, country as CountryCode)).toEqual({ text, country: detected ?? undefined });
+  });
+
+  it.each(vectors.phone.examples)('gives an example number for $country', ({ country, national }) => {
+    expect(phoneExample(country as CountryCode).national).toBe(national);
+  });
+
   it.each(vectors.phone.validWithOptions)('accepts $input with options', (vector) => {
     expect(isValidPhone(vector.input, asCountry(vector.country), vector.options as PhoneOptions)).toBe(true);
   });
@@ -84,6 +95,10 @@ describe('money', () => {
 });
 
 describe('codes', () => {
+  it.each(vectors.flags)('$country has the flag $flag', ({ country: code, flag }) => {
+    expect(country(code as CountryCode)?.flag).toBe(flag);
+  });
+
   it.each(vectors.currencyCodes)('isCurrencyCode("$code") is $expected', ({ code, expected }) => {
     expect(isCurrencyCode(code)).toBe(expected);
   });

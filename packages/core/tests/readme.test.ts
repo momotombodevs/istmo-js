@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import * as istmo from '../src';
 
 const readme = readFileSync(new URL('../../../README.md', import.meta.url), 'utf8');
-const EXAMPLE = /^([a-zA-Z]+\(.*\));?\s*\/\/\s*("[^"]*"|true|false|null|-?\d+)/;
+const EXAMPLE = /^([a-zA-Z]+\(.*\)(?:\??\.[a-zA-Z]+)*);?\s*\/\/\s*("[^"]*"|true|false|null|-?\d+)/;
 const examples = [...readme.matchAll(/```ts\n([\s\S]*?)```/g)]
   .flatMap(([, block]) => (block ?? '').split('\n'))
   .map((line) => EXAMPLE.exec(line.trim()))

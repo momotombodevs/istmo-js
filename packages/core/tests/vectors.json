@@ -383,6 +383,80 @@
         "country": "ni",
         "options": {}
       }
+    ],
+    "typing": [
+      {
+        "input": "812345",
+        "country": "NI",
+        "text": "8123 45",
+        "detected": null
+      },
+      {
+        "input": "81234567",
+        "country": "NI",
+        "text": "8123 4567",
+        "detected": null
+      },
+      {
+        "input": "2222-22",
+        "country": "NI",
+        "text": "2222 22",
+        "detected": null
+      },
+      {
+        "input": "(+506) 8312-3456",
+        "country": "NI",
+        "text": "+506 8312 3456",
+        "detected": "CR"
+      },
+      {
+        "input": "+505",
+        "country": "CR",
+        "text": "+505",
+        "detected": "NI"
+      },
+      {
+        "input": "+",
+        "country": "NI",
+        "text": "+",
+        "detected": null
+      },
+      {
+        "input": "",
+        "country": "NI",
+        "text": "",
+        "detected": null
+      },
+      {
+        "input": "61234567",
+        "country": "PA",
+        "text": "6123-4567",
+        "detected": null
+      },
+      {
+        "input": "abc",
+        "country": "NI",
+        "text": "",
+        "detected": null
+      }
+    ],
+    "examples": [
+      {
+        "country": "NI",
+        "national": "8123 4567"
+      },
+      {
+        "country": "PA",
+        "national": "6123-4567"
+      },
+      {
+        "country": "BZ",
+        "national": "622-1234"
+      },
+      {
+        "country": "CR",
+        "national": "8312 3456"
+      }
     ]
   },
   "money": {
@@ -1049,6 +1123,20 @@
     {
       "code": "MX",
       "expected": false
+    }
+  ],
+  "flags": [
+    {
+      "country": "NI",
+      "flag": "🇳🇮"
+    },
+    {
+      "country": "GT",
+      "flag": "🇬🇹"
+    },
+    {
+      "country": "PA",
+      "flag": "🇵🇦"
     }
   ]
 }

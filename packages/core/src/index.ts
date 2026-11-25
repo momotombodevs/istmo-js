@@ -1,6 +1,7 @@
 export * from './dates';
 export * from './money';
 export * from './phone';
+export * from './phone-input';
 export {
   acceptsCurrency,
   type Country,
