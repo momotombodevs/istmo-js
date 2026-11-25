@@ -1,27 +1,53 @@
 import {
   type CountryCode as LibCountryCode,
+  type MetadataJson,
   ParseError,
   type PhoneNumber,
   parsePhoneNumberWithError,
   validatePhoneNumberLength,
-} from 'libphonenumber-js/max';
-import { type CountryCode, countryCodes, isCountryCode } from './regions';
+} from 'libphonenumber-js/core';
+import metadataJson from './phone-metadata.json';
+import { type CountryCode, countryCodes, requireCountry } from './regions';
 
+const metadata = metadataJson as unknown as MetadataJson;
+
+/**
+ * Kind of line. `fixed_or_mobile` is used where the numbering plan cannot tell them apart.
+ * Pager, personal, shared-cost and similar rare kinds are reported as `other`.
+ */
 export type PhoneType = 'mobile' | 'fixed' | 'fixed_or_mobile' | 'toll_free' | 'premium' | 'voip' | 'other';
 
-export type PhoneError = 'format' | 'too_short' | 'too_long' | 'country' | 'invalid' | 'type';
+/**
+ * Why a phone number was rejected.
+ *
+ * - `format`: not a phone number: no digits, letters or other symbols, or an extension.
+ * - `missing_country`: a local number without `+` and no `defaultCountry` to read it with.
+ * - `too_short` / `too_long`: wrong number of digits for the country.
+ * - `country`: the number belongs to a country outside Central America or outside `options.countries`.
+ * - `invalid`: right length, but not a number that exists in the country's numbering plan.
+ * - `type`: `options.type` is `mobile` and the number is a landline.
+ */
+export type PhoneError = 'format' | 'missing_country' | 'too_short' | 'too_long' | 'country' | 'invalid' | 'type';
 
 export interface PhoneOptions {
+  /** `mobile` accepts only numbers that can receive SMS or WhatsApp (`mobile` or `fixed_or_mobile`). Default `any`. */
   readonly type?: 'any' | 'mobile';
+  /** Restricts the accepted countries. Default: all seven. */
   readonly countries?: readonly CountryCode[];
 }
 
+/** A valid phone number in every format the UI and the server need. */
 export interface Phone {
   readonly country: CountryCode;
+  /** Calling code without `+`, e.g. `505`. */
   readonly callingCode: string;
+  /** Digits after the calling code, e.g. `81234567`. */
   readonly nationalNumber: string;
+  /** E.164, e.g. `+50581234567`. Store and send this one. */
   readonly e164: string;
+  /** For display inside the country, e.g. `8123 4567`. */
   readonly national: string;
+  /** For display anywhere, e.g. `+505 8123 4567`. */
   readonly international: string;
   readonly type: PhoneType;
 }
@@ -30,7 +56,7 @@ export type PhoneValidation =
   | { readonly valid: true; readonly phone: Phone }
   | { readonly valid: false; readonly error: PhoneError };
 
-const TYPES: Record<string, PhoneType> = {
+const TYPES: Readonly<Record<string, PhoneType>> = {
   MOBILE: 'mobile',
   FIXED_LINE: 'fixed',
   FIXED_LINE_OR_MOBILE: 'fixed_or_mobile',
@@ -39,42 +65,60 @@ const TYPES: Record<string, PhoneType> = {
   VOIP: 'voip',
 };
 
-const PARSE_ERRORS: Record<string, PhoneError> = {
-  INVALID_COUNTRY: 'country',
-  TOO_SHORT: 'too_short',
-  TOO_LONG: 'too_long',
-};
+const MAX_INPUT_LENGTH = 64;
+const PHONE_CHARACTERS = /^[\d\s\u00a0+().\-/]+$/;
 
 function fail(error: PhoneError): PhoneValidation {
   return { valid: false, error };
 }
 
-function parse(input: string, defaultCountry: string | null | undefined): PhoneNumber | PhoneError {
-  if (defaultCountry && !isCountryCode(defaultCountry)) {
-    throw new RangeError(`País no soportado: ${defaultCountry}`);
-  }
-  if (!/\d/.test(input)) return 'format';
+function parse(input: string, defaultCountry: CountryCode | undefined): PhoneNumber | PhoneError {
   try {
-    return parsePhoneNumberWithError(input, (defaultCountry || undefined) as LibCountryCode | undefined);
+    return parsePhoneNumberWithError(
+      input,
+      { defaultCountry: defaultCountry as LibCountryCode | undefined, extract: false },
+      metadata,
+    );
   } catch (error) {
-    if (error instanceof ParseError) return PARSE_ERRORS[error.message] ?? 'format';
-    throw error;
+    if (!(error instanceof ParseError)) throw error;
+    if (error.message === 'TOO_SHORT') return 'too_short';
+    if (error.message === 'TOO_LONG') return 'too_long';
+    if (error.message !== 'INVALID_COUNTRY') return 'format';
+    return !defaultCountry && !input.trimStart().startsWith('+') ? 'missing_country' : 'country';
   }
 }
 
+/**
+ * Validates a phone number and tells why it failed. Use it to show a specific error message.
+ *
+ * @param input What the person typed. Digits, spaces, `+`, `-`, `.`, `/` and parentheses are allowed; any other text is rejected.
+ * @param defaultCountry Country used for numbers typed without `+`. Case-insensitive.
+ * @throws {RangeError} When `defaultCountry` is not one of the seven supported countries.
+ * @example validatePhone('8123 4567', 'NI') // { valid: true, phone: { e164: '+50581234567', ... } }
+ * @example validatePhone('1234', 'NI') // { valid: false, error: 'too_short' }
+ */
 export function validatePhone(
-  input: string,
+  input: unknown,
   defaultCountry?: CountryCode | null,
   options: PhoneOptions = {},
 ): PhoneValidation {
-  const parsed = parse(input, defaultCountry);
+  const region = defaultCountry ? requireCountry(defaultCountry).code : undefined;
+  if (
+    typeof input !== 'string' ||
+    input.length > MAX_INPUT_LENGTH ||
+    !PHONE_CHARACTERS.test(input) ||
+    !/\d/.test(input)
+  ) {
+    return fail('format');
+  }
+
+  const parsed = parse(input.replace(/[()]/g, ' ').trim(), region);
   if (typeof parsed === 'string') return fail(parsed);
 
-  const allowed = options.countries ?? countryCodes;
-  const region = parsed.country;
-  if (!region || !allowed.includes(region as CountryCode)) return fail('country');
+  const allowed = (options.countries ?? countryCodes).map((code) => code.toUpperCase());
+  if (!parsed.country || !allowed.includes(parsed.country)) return fail('country');
 
-  const length = validatePhoneNumberLength(parsed.number);
+  const length = validatePhoneNumberLength(parsed.number, metadata);
   if (length === 'TOO_SHORT') return fail('too_short');
   if (length === 'TOO_LONG') return fail('too_long');
   if (length !== undefined || !parsed.isValid()) return fail('invalid');
@@ -82,25 +126,39 @@ export function validatePhone(
   const type = TYPES[parsed.getType() ?? ''] ?? 'other';
   if (options.type === 'mobile' && type !== 'mobile' && type !== 'fixed_or_mobile') return fail('type');
 
+  const national = parsed.formatNational();
   return {
     valid: true,
     phone: {
-      country: region as CountryCode,
+      country: parsed.country as CountryCode,
       callingCode: parsed.countryCallingCode,
       nationalNumber: parsed.nationalNumber,
       e164: parsed.number,
-      national: parsed.formatNational(),
-      international: `+${parsed.countryCallingCode} ${parsed.formatNational()}`,
+      national,
+      international: `+${parsed.countryCallingCode} ${national}`,
       type,
     },
   };
 }
 
-export function parsePhone(input: string, defaultCountry?: CountryCode | null, options?: PhoneOptions): Phone | null {
+/**
+ * Parses a phone number. Same rules as {@link validatePhone}.
+ *
+ * @returns The number in every format, or `null` when it is not valid.
+ * @throws {RangeError} When `defaultCountry` is not one of the seven supported countries.
+ * @example parsePhone('8123 4567', 'NI')?.e164 // "+50581234567"
+ */
+export function parsePhone(input: unknown, defaultCountry?: CountryCode | null, options?: PhoneOptions): Phone | null {
   const result = validatePhone(input, defaultCountry, options);
   return result.valid ? result.phone : null;
 }
 
-export function isValidPhone(input: string, defaultCountry?: CountryCode | null, options?: PhoneOptions): boolean {
+/**
+ * Tells whether a phone number is valid. Same rules as {@link validatePhone}.
+ *
+ * @throws {RangeError} When `defaultCountry` is not one of the seven supported countries.
+ * @example isValidPhone('2222 2222', 'NI', { type: 'mobile' }) // false, it is a landline
+ */
+export function isValidPhone(input: unknown, defaultCountry?: CountryCode | null, options?: PhoneOptions): boolean {
   return validatePhone(input, defaultCountry, options).valid;
 }

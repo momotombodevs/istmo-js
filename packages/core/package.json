@@ -1,13 +1,29 @@
 {
   "name": "@momotombo/istmo",
   "version": "0.1.0",
-  "description": "Validación de teléfonos y monedas de Centroamérica",
+  "description": "Teléfonos, monedas y fechas de Centroamérica para React, React Native y Node",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "phone": [
+        "./dist/phone.d.ts"
+      ],
+      "money": [
+        "./dist/money.d.ts"
+      ],
+      "dates": [
+        "./dist/dates.d.ts"
+      ],
+      "regions": [
+        "./dist/regions.d.ts"
+      ]
+    }
+  },
   "exports": {
     ".": {
       "import": {
@@ -19,6 +35,46 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./phone": {
+      "import": {
+        "types": "./dist/phone.d.ts",
+        "default": "./dist/phone.js"
+      },
+      "require": {
+        "types": "./dist/phone.d.cts",
+        "default": "./dist/phone.cjs"
+      }
+    },
+    "./money": {
+      "import": {
+        "types": "./dist/money.d.ts",
+        "default": "./dist/money.js"
+      },
+      "require": {
+        "types": "./dist/money.d.cts",
+        "default": "./dist/money.cjs"
+      }
+    },
+    "./dates": {
+      "import": {
+        "types": "./dist/dates.d.ts",
+        "default": "./dist/dates.js"
+      },
+      "require": {
+        "types": "./dist/dates.d.cts",
+        "default": "./dist/dates.cjs"
+      }
+    },
+    "./regions": {
+      "import": {
+        "types": "./dist/regions.d.ts",
+        "default": "./dist/regions.js"
+      },
+      "require": {
+        "types": "./dist/regions.d.cts",
+        "default": "./dist/regions.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -28,15 +84,19 @@
     "CHANGELOG.md"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
     "build": "tsdown",
     "test": "vitest run",
+    "test:tz": "TZ=Asia/Tokyo vitest run && TZ=Pacific/Kiritimati vitest run && TZ=America/Los_Angeles vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:package": "node scripts/smoke-test.mjs",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tests",
-    "prepublishOnly": "npm run typecheck && npm test && npm run build && npm run check:package",
-    "check:package": "publint && attw --pack ."
+    "prepublishOnly": "npm run typecheck && npm test && npm run build && npm run check:package && npm run test:package",
+    "check:package": "publint && attw --pack .",
+    "build:metadata": "node scripts/build-phone-metadata.mjs",
+    "check:metadata": "node scripts/build-phone-metadata.mjs --check"
   },
   "repository": {
     "type": "git",
@@ -70,10 +130,15 @@
     "react",
     "react-native",
     "expo",
-    "typescript"
+    "typescript",
+    "fecha",
+    "date",
+    "timezone",
+    "zona-horaria"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
@@ -86,6 +151,6 @@
   },
   "author": "momotombo",
   "dependencies": {
-    "libphonenumber-js": "^1.13.17"
+    "libphonenumber-js": "1.13.17"
   }
 }

@@ -12,7 +12,10 @@
     "test": "npm run test --workspaces --if-present",
     "test:coverage": "npm run test:coverage --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "check:package": "npm run check:package --workspaces --if-present"
+    "check:package": "npm run check:package --workspaces --if-present",
+    "test:tz": "npm run test:tz --workspaces --if-present",
+    "test:package": "npm run test:package --workspaces --if-present",
+    "check:metadata": "npm run check:metadata --workspaces --if-present"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.5"
