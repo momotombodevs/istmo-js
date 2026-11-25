@@ -1,6 +1,6 @@
 {
   "name": "@momotombodevs/istmo",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Teléfonos, monedas y fechas de Centroamérica para React, React Native y Node",
   "license": "MIT",
   "type": "module",

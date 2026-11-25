@@ -4,6 +4,12 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); v
 
 ## [Unreleased]
 
+## [0.2.0]
+
+### Añadido
+
+- Modo controlado en `usePhoneInput`, `useMoneyInput` y `useDateInput`: `value` y `onChange` (y `country` en el teléfono) para campos cuyo valor vive en un store o una librería de formularios. Sin `value` siguen guardando su propio estado, y `onChange` avisa de cada cambio en los dos modos.
+
 ## [0.1.0]
 
 ### Añadido
@@ -15,5 +21,6 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); v
 - Campos con React en `@momotombodevs/istmo/react`: `usePhoneInput`, `useMoneyInput` y `useDateInput`, con formato mientras se escribe y el cursor en su lugar. `formatPhoneInput` en `/phone-input`, `phoneExample` y la bandera de cada país (`country.flag`).
 - Subrutas `@momotombodevs/istmo/phone`, `/phone-input`, `/money`, `/dates`, `/regions` y `/react` para no cargar lo que no se usa en Metro.
 
-[Unreleased]: https://github.com/momotombodevs/istmo-js/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/momotombodevs/istmo-js/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/momotombodevs/istmo-js/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/momotombodevs/istmo-js/releases/tag/v0.1.0
