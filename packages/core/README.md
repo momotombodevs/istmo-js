@@ -1,18 +1,18 @@
-# @momotombo/istmo
+# @momotombodevs/istmo
 
 [![ci](https://github.com/momotombodevs/istmo-js/actions/workflows/ci.yml/badge.svg)](https://github.com/momotombodevs/istmo-js/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/@momotombo/istmo)](https://www.npmjs.com/package/@momotombo/istmo)
-[![Licencia](https://img.shields.io/npm/l/@momotombo/istmo)](LICENSE)
+[![npm](https://img.shields.io/npm/v/@momotombodevs/istmo)](https://www.npmjs.com/package/@momotombodevs/istmo)
+[![Licencia](https://img.shields.io/npm/l/@momotombodevs/istmo)](LICENSE)
 
 Teléfonos, monedas y fechas de Centroamérica: Guatemala, Belice, El Salvador, Honduras, Nicaragua, Costa Rica y Panamá. Funciona en React, React Native (Expo, Hermes) y Node, sin código nativo.
 
 > Validate and format Central American phone numbers, money amounts and `dd/mm/yyyy` dates, and read the local time of each country. Docs are in Spanish; the API and the TSDoc in your editor are in English.
 
 ```
-npm install @momotombo/istmo
+npm install @momotombodevs/istmo
 ```
 
-En Expo use `npx expo install @momotombo/istmo`. Funciona en Expo Go.
+En Expo use `npx expo install @momotombodevs/istmo`. Funciona en Expo Go.
 
 ## Contenido
 
@@ -31,11 +31,11 @@ Metro (React Native) no descarta el código que no se usa, así que importe desd
 
 | Importación | Contiene | Tamaño minificado |
 |-------------|----------|-------------------|
-| `@momotombo/istmo/money` | monedas | ~5 kB |
-| `@momotombo/istmo/dates` | fechas y hora local | ~4 kB |
-| `@momotombo/istmo/regions` | países y monedas | ~3 kB |
-| `@momotombo/istmo/phone` | teléfonos (incluye libphonenumber) | ~48 kB |
-| `@momotombo/istmo` | todo | ~53 kB |
+| `@momotombodevs/istmo/money` | monedas | ~5 kB |
+| `@momotombodevs/istmo/dates` | fechas y hora local | ~4 kB |
+| `@momotombodevs/istmo/regions` | países y monedas | ~3 kB |
+| `@momotombodevs/istmo/phone` | teléfonos (incluye libphonenumber) | ~48 kB |
+| `@momotombodevs/istmo` | todo | ~53 kB |
 
 Los teléfonos usan [libphonenumber-js](https://gitlab.com/catamphetamine/libphonenumber-js) con la metadata recortada a los siete países (3 kB en lugar de 157 kB).
 
@@ -50,7 +50,7 @@ Los teléfonos usan [libphonenumber-js](https://gitlab.com/catamphetamine/libpho
 ## Teléfonos
 
 ```ts
-import { isValidPhone, parsePhone, validatePhone } from '@momotombo/istmo/phone';
+import { isValidPhone, parsePhone, validatePhone } from '@momotombodevs/istmo/phone';
 
 parsePhone('8123 4567', 'NI');
 // {
@@ -97,7 +97,7 @@ validatePhone('1234', 'NI'); // { valid: false, error: 'too_short' }
 GTQ, BZD, HNL, NIO, CRC, PAB y USD. Los montos se pasan como texto decimal (`"1250.50"`, como los guarda una columna `decimal`) para no perder centavos. También se aceptan números de JavaScript dentro del rango seguro.
 
 ```ts
-import { formatMoney, fromMinorUnits, parseMoney, toMinorUnits } from '@momotombo/istmo/money';
+import { formatMoney, fromMinorUnits, parseMoney, toMinorUnits } from '@momotombodevs/istmo/money';
 
 formatMoney('1250.5', 'NIO');                         // "C$ 1,250.50"
 formatMoney('1234567.5', 'CRC');                      // "₡ 1 234 567,50"
@@ -136,7 +136,7 @@ fromMinorUnits(1234, 'USD');   // "12.34"
 Ninguno de los siete países cambia de horario. Panamá está en UTC-5 y los demás en UTC-6, así que la hora local se calcula con ese desfase fijo, sin `Intl` y sin depender de la zona del teléfono o del servidor.
 
 ```ts
-import { formatDate, localDateTime, parseDate, today, zonedDateTime } from '@momotombo/istmo/dates';
+import { formatDate, localDateTime, parseDate, today, zonedDateTime } from '@momotombodevs/istmo/dates';
 
 parseDate('24/11/2026');  // "2026-11-24"
 parseDate('1/2/2026');    // "2026-02-01"
@@ -162,7 +162,7 @@ zonedDateTime('2026-11-24', '14:30', 'NI');    // "2026-11-24T14:30:00-06:00"
 ## Países y monedas
 
 ```ts
-import { acceptsCurrency, country, currency, isCountryCode } from '@momotombo/istmo/regions';
+import { acceptsCurrency, country, currency, isCountryCode } from '@momotombodevs/istmo/regions';
 
 country('NI');
 // { code: 'NI', name: 'Nicaragua', callingCode: '505', currency: 'NIO', currencies: ['NIO', 'USD'],
@@ -201,7 +201,7 @@ Un campo de teléfono en React Native que entrega el número normalizado:
 ```tsx
 import { useState } from 'react';
 import { Text, TextInput } from 'react-native';
-import { type PhoneError, validatePhone } from '@momotombo/istmo/phone';
+import { type PhoneError, validatePhone } from '@momotombodevs/istmo/phone';
 
 const messages: Record<PhoneError, string> = {
   format: 'Escriba solo el número.',
@@ -236,7 +236,7 @@ Un monto en un formulario de Inertia que se envía ya normalizado:
 
 ```tsx
 import { useForm } from '@inertiajs/react';
-import { parseMoney } from '@momotombo/istmo/money';
+import { parseMoney } from '@momotombodevs/istmo/money';
 
 export function PriceForm() {
   const form = useForm({ price: '' });
