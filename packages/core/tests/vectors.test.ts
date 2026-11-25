@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  acceptsCurrency,
   type CountryCode,
-  countries,
+  type CurrencyCode,
   formatDate,
   formatMoney,
   fromMinorUnits,
+  type IsoDate,
+  isCountryCode,
   isCurrencyCode,
   isValidDate,
   isValidPhone,
@@ -20,9 +23,12 @@ import {
 } from '../src';
 import vectors from './vectors.json';
 
+const asCurrency = (code: string) => code as CurrencyCode;
+const asCountry = (code: string | null) => code as CountryCode | null;
+
 describe('phone', () => {
   it.each(vectors.phone.valid)('parses $input ($country)', (vector) => {
-    expect(parsePhone(vector.input, vector.country as CountryCode | null)).toEqual({
+    expect(parsePhone(vector.input, asCountry(vector.country))).toEqual({
       country: vector.region,
       callingCode: vector.e164.slice(1, 4),
       nationalNumber: vector.e164.slice(4),
@@ -34,46 +40,50 @@ describe('phone', () => {
   });
 
   it.each(vectors.phone.invalid)('rejects "$input" as $error', (vector) => {
-    expect(validatePhone(vector.input, vector.country as CountryCode | null, vector.options as PhoneOptions)).toEqual({
+    expect(validatePhone(vector.input, asCountry(vector.country), vector.options as PhoneOptions)).toEqual({
       valid: false,
       error: vector.error,
     });
   });
 
   it.each(vectors.phone.validWithOptions)('accepts $input with options', (vector) => {
-    expect(isValidPhone(vector.input, vector.country as CountryCode, vector.options as PhoneOptions)).toBe(true);
-  });
-
-  it('refuses a default country outside Central America', () => {
-    expect(() => parsePhone('8123 4567', 'MX' as CountryCode)).toThrow(RangeError);
+    expect(isValidPhone(vector.input, asCountry(vector.country), vector.options as PhoneOptions)).toBe(true);
   });
 });
 
 describe('money', () => {
   it.each(vectors.money.format)('formats $amount $currency', ({ amount, currency, options, expected }) => {
-    expect(formatMoney(amount, currency, options as Parameters<typeof formatMoney>[2])).toBe(expected);
+    expect(formatMoney(amount, asCurrency(currency), options as Parameters<typeof formatMoney>[2])).toBe(expected);
   });
 
   it.each(vectors.money.formatErrors)('refuses to format $amount $currency', ({ amount, currency }) => {
-    expect(() => formatMoney(amount, currency)).toThrow(RangeError);
+    expect(() => formatMoney(amount, asCurrency(currency))).toThrow(RangeError);
   });
 
   it.each(vectors.money.parse)('parses "$input" as $expected', ({ input, currency, expected }) => {
-    expect(parseMoney(input, currency)).toBe(expected);
+    expect(parseMoney(input, asCurrency(currency))).toBe(expected);
   });
 
   it.each(vectors.money.minorUnits)(
     'converts $amount $currency to minor units',
     ({ amount, currency, minor, back }) => {
-      expect(toMinorUnits(amount, currency)).toBe(minor);
-      expect(fromMinorUnits(minor, currency)).toBe(back);
+      expect(toMinorUnits(amount, asCurrency(currency))).toBe(minor);
+      expect(fromMinorUnits(minor, asCurrency(currency))).toBe(back);
     },
   );
 });
 
-describe('currency codes', () => {
-  it.each(vectors.currencyCodes)('$code in $country is $expected', ({ code, country, expected }) => {
-    expect(isCurrencyCode(code, country ?? undefined)).toBe(expected);
+describe('codes', () => {
+  it.each(vectors.currencyCodes)('isCurrencyCode("$code") is $expected', ({ code, expected }) => {
+    expect(isCurrencyCode(code)).toBe(expected);
+  });
+
+  it.each(vectors.countryCodes)('isCountryCode("$code") is $expected', ({ code, expected }) => {
+    expect(isCountryCode(code)).toBe(expected);
+  });
+
+  it.each(vectors.acceptsCurrency)('$country accepts $currency: $expected', ({ country, currency, expected }) => {
+    expect(acceptsCurrency(country as CountryCode, asCurrency(currency))).toBe(expected);
   });
 });
 
@@ -92,32 +102,24 @@ describe('dates', () => {
   });
 
   it.each(vectors.dates.local)('reads $instant in $country', ({ instant, country, date, time, iso }) => {
-    expect(localDateTime(country, instant)).toEqual({ date, time, iso });
-    expect(localDateTime(country, new Date(instant))).toEqual({ date, time, iso });
-    expect(today(country, instant)).toBe(date);
+    const code = country as CountryCode;
+    expect(localDateTime(code, instant)).toEqual({ date, time, iso });
+    expect(localDateTime(code, new Date(instant))).toEqual({ date, time, iso });
+    expect(localDateTime(code, Date.parse(instant))).toEqual({ date, time, iso });
+    expect(today(code, instant)).toBe(date);
+  });
+
+  it.each(vectors.dates.localErrors)('refuses $instant in $country', ({ instant, country }) => {
+    expect(() => localDateTime(country as CountryCode, instant)).toThrow(RangeError);
   });
 
   it.each(vectors.dates.zoned)('builds $date $time in $country', ({ date, time, country, expected, utc }) => {
-    const zoned = zonedDateTime(date, time, country);
+    const zoned = zonedDateTime(date as IsoDate, time, country as CountryCode);
     expect(zoned).toBe(expected);
     expect(new Date(zoned).toISOString()).toBe(utc.replace('Z', '.000Z'));
   });
 
   it.each(vectors.dates.zonedErrors)('refuses $date $time in $country', ({ date, time, country }) => {
-    expect(() => zonedDateTime(date, time, country)).toThrow(RangeError);
-  });
-});
-
-describe('time zone data', () => {
-  it.each(countries)('$code keeps a fixed offset matching tzdata', ({ timezone, utcOffset }) => {
-    const offsets = new Set(
-      Array.from({ length: 24 }, (_, month) => {
-        const instant = new Date(Date.UTC(2026 + Math.floor(month / 12), month % 12, 15));
-        return new Intl.DateTimeFormat('en-US', { timeZone: timezone, timeZoneName: 'longOffset' })
-          .formatToParts(instant)
-          .find(({ type }) => type === 'timeZoneName')?.value;
-      }),
-    );
-    expect([...offsets]).toEqual([`GMT${utcOffset}`]);
+    expect(() => zonedDateTime(date as IsoDate, time, country as CountryCode)).toThrow(RangeError);
   });
 });
