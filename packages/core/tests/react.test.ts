@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, renderHook, screen } from '@testing-library/react';
-import { createElement } from 'react';
+import { createElement, useState } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { useDateInput, useMoneyInput, usePhoneInput } from '../src/react';
+import { type PhoneInputChange, useDateInput, useMoneyInput, usePhoneInput } from '../src/react';
 
 afterEach(cleanup);
 
@@ -249,5 +249,104 @@ describe('useDateInput', () => {
     type(result, '01/02/20');
     act(() => result.current.reset());
     expect(result.current.value).toBe('01/02/2026');
+  });
+});
+
+function ControlledPhone({ onStore }: { onStore: (change: PhoneInputChange) => void }) {
+  const [stored, setStored] = useState<PhoneInputChange>({ value: '', country: 'NI' });
+  const field = usePhoneInput({
+    defaultCountry: 'NI',
+    value: stored.value,
+    country: stored.country,
+    onChange: (change) => {
+      setStored(change);
+      onStore(change);
+    },
+  });
+  return createElement(
+    'div',
+    null,
+    createElement('input', {
+      ref: field.ref,
+      value: field.value,
+      onChange: (event: { target: { value: string } }) => field.onChangeText(event.target.value),
+      'aria-label': 'phone',
+    }),
+    createElement('button', { onClick: () => field.setCountry('CR'), type: 'button' }, 'CR'),
+    createElement('button', { onClick: () => setStored({ value: '', country: 'NI' }), type: 'button' }, 'clear'),
+    createElement('output', null, field.phone?.e164 ?? ''),
+  );
+}
+
+describe('controlled hooks', () => {
+  it('lets a store own the phone and keeps the caret in place', () => {
+    const changes: PhoneInputChange[] = [];
+    render(createElement(ControlledPhone, { onStore: (change) => changes.push(change) }));
+    const input = screen.getByLabelText('phone') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '81234567' } });
+    expect(input.value).toBe('8123 4567');
+    expect(changes.at(-1)).toEqual({ value: '8123 4567', country: 'NI' });
+    fireEvent.change(input, { target: { value: '81234567' } });
+    expect(input.value).toBe('8124 567');
+    expect(input.selectionStart).toBe(3);
+  });
+
+  it('follows a value the store changes from outside', () => {
+    render(createElement(ControlledPhone, { onStore: () => {} }));
+    const input = screen.getByLabelText('phone') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '81234567' } });
+    expect(screen.getByRole('status').textContent).toBe('+50581234567');
+    fireEvent.click(screen.getByText('clear'));
+    expect(input.value).toBe('');
+    expect(screen.getByRole('status').textContent).toBe('');
+  });
+
+  it('reports a country chosen in the selector', () => {
+    const changes: PhoneInputChange[] = [];
+    render(createElement(ControlledPhone, { onStore: (change) => changes.push(change) }));
+    fireEvent.change(screen.getByLabelText('phone'), { target: { value: '83123456' } });
+    fireEvent.click(screen.getByText('CR'));
+    expect(changes.at(-1)).toEqual({ value: '8312 3456', country: 'CR' });
+    expect(screen.getByRole('status').textContent).toBe('+50683123456');
+  });
+
+  it('keeps the same handlers while the controlled value changes', () => {
+    let value = '';
+    const { result, rerender } = renderHook(() =>
+      usePhoneInput({ defaultCountry: 'NI', value, onChange: (change) => (value = change.value) }),
+    );
+    const first = result.current.onChangeText;
+    act(() => result.current.onChangeText('8123'));
+    rerender();
+    expect(result.current.value).toBe('8123');
+    expect(result.current.onChangeText).toBe(first);
+  });
+
+  it('controls the amount and the date the same way', () => {
+    let amount = '';
+    let date = '';
+    const money = renderHook(() =>
+      useMoneyInput({ currency: 'NIO', value: amount, onChange: (next) => (amount = next) }),
+    );
+    act(() => money.result.current.onChangeText('1250'));
+    money.rerender();
+    expect(money.result.current.value).toBe('1,250');
+    act(() => money.result.current.onBlur());
+    money.rerender();
+    expect(amount).toBe('1,250.00');
+
+    const day = renderHook(() => useDateInput({ value: date, onChange: (next) => (date = next) }));
+    act(() => day.result.current.onChangeText('24112026'));
+    day.rerender();
+    expect(day.result.current.value).toBe('24/11/2026');
+    expect(day.result.current.date).toBe('2026-11-24');
+  });
+
+  it('reports changes in uncontrolled mode too', () => {
+    const changes: string[] = [];
+    const { result } = renderHook(() => useMoneyInput({ currency: 'USD', onChange: (next) => changes.push(next) }));
+    act(() => result.current.onChangeText('5'));
+    expect(result.current.value).toBe('5');
+    expect(changes).toEqual(['5']);
   });
 });

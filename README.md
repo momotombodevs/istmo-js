@@ -215,7 +215,23 @@ export function PhoneField() {
 | `error` | el motivo, solo después de que el campo perdió el foco una vez; `null` si está vacío o es válido |
 | `reset()` | vuelve al valor inicial y oculta el error |
 
-Opciones: `defaultCountry` (obligatoria), `type` y `countries` como en `validatePhone`, e `initialValue` con un número E.164 guardado para editarlo (`'+50581234567'`). El campo vacío no es un error: si el teléfono es obligatorio, compruebe `phone !== null` al enviar.
+Opciones: `defaultCountry` (obligatoria), `type` y `countries` como en `validatePhone`, `initialValue` con un número E.164 guardado para editarlo (`'+50581234567'`), y `value`, `country` y `onChange` para controlarlo desde afuera. El campo vacío no es un error: si el teléfono es obligatorio, compruebe `phone !== null` al enviar.
+
+### Con un store o una librería de formularios
+
+Si el valor vive en otro lado (zustand, Redux, React Hook Form), pase `value` y `onChange`, y en el teléfono también `country`. El hook sigue formateando y cuidando el cursor, pero el valor es el suyo:
+
+```tsx
+const { phone, phoneCountry, setPhone } = useCustomerStore();
+const field = usePhoneInput({
+  defaultCountry: 'NI',
+  value: phone,
+  country: phoneCountry,
+  onChange: ({ value, country }) => setPhone(value, country),
+});
+```
+
+`useMoneyInput` y `useDateInput` aceptan `value` y `onChange` con el texto del campo; el monto y la fecha se leen con `formatMoneyInput` y `formatDateInput`. Sin `value`, el hook guarda su propio estado y `onChange` solo avisa de cada cambio.
 
 Las banderas son emoji (`country.flag`). Se ven en iOS, Android y macOS; los navegadores de Windows muestran las dos letras del código en su lugar. Para la web, el paquete trae las 7 banderas como SVG en `@momotombodevs/istmo/flags/<código>.svg`, tomadas de [flag-icons](https://github.com/lipis/flag-icons) (licencia MIT, incluida en `flags/LICENSE`). Son archivos, no JavaScript: Vite los importa como una URL y el navegador los carga aparte.
 
@@ -408,8 +424,8 @@ export function DeliveryFields() {
 
 | Hook | Opciones | Devuelve |
 |------|----------|----------|
-| `useMoneyInput` | `currency`, `initialValue`, `min`, `max` | `amount` (`"1250.50"`, listo para enviar), `currency` (con `symbol`), `error`: `format`, `min` o `max` |
-| `useDateInput` | `initialValue` (`YYYY-MM-DD`), `min`, `max` | `date` (`YYYY-MM-DD`), `placeholder` (`dd/mm/aaaa`), `error`: `format`, `min` o `max` |
+| `useMoneyInput` | `currency`, `initialValue`, `min`, `max`, `value`, `onChange` | `amount` (`"1250.50"`, listo para enviar), `currency` (con `symbol`), `error`: `format`, `min` o `max` |
+| `useDateInput` | `initialValue` (`YYYY-MM-DD`), `min`, `max`, `value`, `onChange` | `date` (`YYYY-MM-DD`), `placeholder` (`dd/mm/aaaa`), `error`: `format`, `min` o `max` |
 
 `useMoneyInput` toma la `,` del teclado decimal en español como punto decimal (en Android, el teclado `decimal-pad` muestra `,` según el idioma), lee un monto pegado en cualquiera de las tres formas y completa los decimales al salir del campo (`1,250.5` → `1,250.50`).
 

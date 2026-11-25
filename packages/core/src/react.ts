@@ -17,8 +17,20 @@ import { requireCountry, requireCurrency } from './require';
 export interface UsePhoneInputOptions extends PhoneOptions {
   /** Country selected at first, and used for numbers typed without `+`. */
   readonly defaultCountry: CountryCode;
-  /** A stored number to edit, in E.164 (`+50581234567`). Its country becomes the selected one. */
+  /** A stored number to edit, in E.164 (`+50581234567`). Its country becomes the selected one. Ignored when `value` is set. */
   readonly initialValue?: string | null;
+  /** Controlled text, for a field whose value lives in a store or a form library. Pass it with `country` and `onChange`. */
+  readonly value?: string;
+  /** Controlled country, used with `value`. Falls back to `defaultCountry`. */
+  readonly country?: CountryCode | null;
+  /** Called with the new text and country after every change, controlled or not. */
+  readonly onChange?: (change: PhoneInputChange) => void;
+}
+
+/** What {@link UsePhoneInputOptions.onChange} receives. */
+export interface PhoneInputChange {
+  readonly value: string;
+  readonly country: CountryCode;
 }
 
 /** State and handlers for a phone field. Wire them to a `TextInput` (React Native) or an `<input>` (web). */
@@ -45,12 +57,12 @@ export interface PhoneInput {
   readonly reset: () => void;
 }
 
-interface FieldState {
-  readonly text: string;
-  readonly country: CountryCode;
+interface Interaction {
   readonly touched: boolean;
   readonly caret: number | null;
 }
+
+const FRESH: Interaction = { touched: false, caret: null };
 
 /** The part of a web `<input>` or a React Native `TextInput` the hooks use to move the caret. */
 export interface SelectableInput {
@@ -62,11 +74,36 @@ const DIGIT = /\d/;
 const useIsomorphicLayoutEffect = 'window' in globalThis ? useLayoutEffect : useEffect;
 const digitsOf = (text: string): string => text.replace(/\D/g, '');
 
-function initialState({ defaultCountry, initialValue, countries }: UsePhoneInputOptions): FieldState {
+function initialPhone(
+  defaultCountry: CountryCode,
+  initialValue: string | null | undefined,
+  countries: readonly CountryCode[],
+): PhoneInputChange {
   const stored = initialValue ? parsePhone(initialValue, defaultCountry, { countries }) : null;
   return stored
-    ? { text: stored.national, country: stored.country, touched: false, caret: null }
-    : { text: '', country: requireCountry(defaultCountry).code, touched: false, caret: null };
+    ? { value: stored.national, country: stored.country }
+    : { value: '', country: requireCountry(defaultCountry).code };
+}
+
+function useFieldValue<T>(
+  controlled: T | undefined,
+  onChange: ((value: T) => void) | undefined,
+  initial: () => T,
+): readonly [T, (change: (current: T) => T) => void] {
+  const [own, setOwn] = useState(initial);
+  const value = controlled === undefined ? own : controlled;
+  const latest = useRef({ value, onChange, controlled: controlled !== undefined });
+  useIsomorphicLayoutEffect(() => {
+    latest.current = { value, onChange, controlled: controlled !== undefined };
+  });
+  const update = useCallback((change: (current: T) => T) => {
+    const current = latest.current;
+    const next = change(current.value);
+    current.value = next;
+    if (!current.controlled) setOwn(next);
+    current.onChange?.(next);
+  }, []);
+  return [value, update];
 }
 
 function useCaret(caret: number | null, text: string): (element: SelectableInput | null) => void {
@@ -85,7 +122,8 @@ function useCaret(caret: number | null, text: string): (element: SelectableInput
  * A phone field that formats while typing, keeps the caret where the person is typing, follows the country of a
  * number typed with `+`, and validates with the same rules as {@link validatePhone}. It renders nothing: draw the
  * flag selector and the input with your own components, and pass `ref` to the input so the caret stays in place.
- * The handlers keep the same identity while the options do not change.
+ * The handlers keep the same identity while the options do not change. Pass `value`, `country` and `onChange` to
+ * control the field from a store or a form library; otherwise it keeps its own state.
  *
  * @throws {RangeError} When `defaultCountry` or an option is not valid, or `setCountry` gets a country outside `countries`.
  * @example
@@ -95,19 +133,23 @@ function useCaret(caret: number | null, text: string): (element: SelectableInput
 export function usePhoneInput(options: UsePhoneInputOptions): PhoneInput {
   const { defaultCountry, initialValue, type } = options;
   const allowedKey = (options.countries ?? countryCodes).join(',');
-  const [state, setState] = useState(() => initialState(options));
-  const ref = useCaret(state.caret, state.text);
+  const controlled =
+    options.value === undefined ? undefined : { value: options.value, country: options.country ?? defaultCountry };
+  const [field, update] = useFieldValue(controlled, options.onChange, () =>
+    initialPhone(defaultCountry, initialValue, options.countries ?? countryCodes),
+  );
+  const [interaction, setInteraction] = useState(FRESH);
+  const ref = useCaret(interaction.caret, field.value);
 
   const handlers = useMemo(() => {
     const allowed = allowedKey.split(',') as CountryCode[];
-    const initial = () => initialState({ defaultCountry, initialValue, countries: allowed });
     return {
       allowed,
       onChangeText: (next: string) =>
-        setState((current) => {
+        update((current) => {
           let detected: CountryCode | undefined;
           const edit = applyEdit(
-            current.text,
+            current.value,
             next,
             (typed) => {
               const formatted = formatPhoneInput(typed, current.country);
@@ -116,35 +158,34 @@ export function usePhoneInput(options: UsePhoneInputOptions): PhoneInput {
             },
             DIGIT,
           );
-          const country = detected && allowed.includes(detected) ? detected : current.country;
-          return { ...current, text: edit.text, caret: edit.caret, country };
+          setInteraction((state) => ({ ...state, caret: edit.caret }));
+          return { value: edit.text, country: detected && allowed.includes(detected) ? detected : current.country };
         }),
-      onBlur: () => setState((current) => (current.touched ? current : { ...current, touched: true })),
+      onBlur: () => setInteraction((state) => (state.touched ? state : { ...state, touched: true })),
       setCountry: (code: CountryCode) => {
         if (!allowed.includes(code)) throw new RangeError('País fuera de la lista countries del campo.');
-        setState((current) => ({
-          ...current,
-          country: code,
-          text: formatPhoneInput(current.text, code).text,
-          caret: null,
-        }));
+        setInteraction((state) => ({ ...state, caret: null }));
+        update((current) => ({ value: formatPhoneInput(current.value, code).text, country: code }));
       },
-      reset: () => setState(initial()),
+      reset: () => {
+        setInteraction(FRESH);
+        update(() => initialPhone(defaultCountry, initialValue, allowed));
+      },
     };
-  }, [allowedKey, defaultCountry, initialValue]);
+  }, [allowedKey, defaultCountry, initialValue, update]);
 
-  const validation = digitsOf(state.text)
-    ? validatePhone(state.text, state.country, { type, countries: handlers.allowed })
+  const validation = digitsOf(field.value)
+    ? validatePhone(field.value, field.country, { type, countries: handlers.allowed })
     : null;
 
   return {
     ref,
-    value: state.text,
-    country: requireCountry(state.country),
+    value: field.value,
+    country: requireCountry(field.country),
     countries: allCountries.filter(({ code }) => handlers.allowed.includes(code)),
-    placeholder: phoneExample(state.country).national,
+    placeholder: phoneExample(field.country).national,
     phone: validation?.valid ? validation.phone : null,
-    error: state.touched && validation && !validation.valid ? validation.error : null,
+    error: interaction.touched && validation && !validation.valid ? validation.error : null,
     onChangeText: handlers.onChangeText,
     onBlur: handlers.onBlur,
     setCountry: handlers.setCountry,
@@ -163,6 +204,10 @@ export interface UseMoneyInputOptions {
   readonly min?: Amount;
   /** Largest accepted amount, inclusive. */
   readonly max?: Amount;
+  /** Controlled text shown in the field (`1,250.5`), for a value that lives in a store or a form library. */
+  readonly value?: string;
+  /** Called with the new text after every change, controlled or not. Read the amount with {@link formatMoneyInput}. */
+  readonly onChange?: (value: string) => void;
 }
 
 /** State and handlers for an amount field. Wire them like {@link PhoneInput}. */
@@ -183,18 +228,12 @@ export interface MoneyInput {
   readonly reset: () => void;
 }
 
-interface FieldText {
-  readonly text: string;
-  readonly touched: boolean;
-  readonly caret: number | null;
-}
-
 const AMOUNT_CHARACTER = /[\d.]/;
 
-function initialMoney(currency: CurrencyCode, initialValue: Amount | null | undefined): FieldText {
-  const text =
-    initialValue === null || initialValue === undefined ? '' : formatMoney(initialValue, currency, { display: 'none' });
-  return { text, touched: false, caret: null };
+function initialMoney(currency: CurrencyCode, initialValue: Amount | null | undefined): string {
+  return initialValue === null || initialValue === undefined
+    ? ''
+    : formatMoney(initialValue, currency, { display: 'none' });
 }
 
 const FIELD_FORMAT = /^[\d,]*(?:\.\d*)?$/;
@@ -226,42 +265,48 @@ function amountError(amount: string | null, text: string, currency: CurrencyCode
  * const price = useMoneyInput({ currency: 'NIO', min: '1' });
  * <TextInput ref={price.ref} value={price.value} onChangeText={price.onChangeText} onBlur={price.onBlur} keyboardType="decimal-pad" />
  */
-export function useMoneyInput({ currency, initialValue, min, max }: UseMoneyInputOptions): MoneyInput {
+export function useMoneyInput({ currency, initialValue, min, max, value, onChange }: UseMoneyInputOptions): MoneyInput {
   const target = requireCurrency(currency);
-  const [state, setState] = useState(() => initialMoney(currency, initialValue));
-  const ref = useCaret(state.caret, state.text);
+  const [text, update] = useFieldValue(value, onChange, () => initialMoney(currency, initialValue));
+  const [interaction, setInteraction] = useState(FRESH);
+  const ref = useCaret(interaction.caret, text);
 
   const handlers = useMemo(
     () => ({
       onChangeText: (next: string) =>
-        setState((current) => {
+        update((current) => {
           const edit = applyEdit(
-            current.text,
-            typedAmount(current.text, next, currency),
+            current,
+            typedAmount(current, next, currency),
             (typed) => formatMoneyInput(typed, currency).text,
             AMOUNT_CHARACTER,
           );
-          return { ...current, text: edit.text, caret: edit.caret };
+          setInteraction((state) => ({ ...state, caret: edit.caret }));
+          return edit.text;
         }),
-      onBlur: () =>
-        setState((current) => {
-          const { amount } = formatMoneyInput(current.text, currency);
-          const text = amount === null ? current.text : formatMoney(amount, currency, { display: 'none' });
-          return { text, touched: true, caret: null };
-        }),
-      reset: () => setState(initialMoney(currency, initialValue)),
+      onBlur: () => {
+        setInteraction({ touched: true, caret: null });
+        update((current) => {
+          const { amount } = formatMoneyInput(current, currency);
+          return amount === null ? current : formatMoney(amount, currency, { display: 'none' });
+        });
+      },
+      reset: () => {
+        setInteraction(FRESH);
+        update(() => initialMoney(currency, initialValue));
+      },
     }),
-    [currency, initialValue],
+    [currency, initialValue, update],
   );
 
-  const { amount } = formatMoneyInput(state.text, currency);
-  const error = amountError(amount, state.text, currency, min, max);
+  const { amount } = formatMoneyInput(text, currency);
+  const error = amountError(amount, text, currency, min, max);
 
   return {
     ref,
-    value: state.text,
+    value: text,
     amount: error === null ? amount : null,
-    error: state.touched ? error : null,
+    error: interaction.touched ? error : null,
     currency: target,
     onChangeText: handlers.onChangeText,
     onBlur: handlers.onBlur,
@@ -279,6 +324,10 @@ export interface UseDateInputOptions {
   readonly min?: string;
   /** Latest accepted date, inclusive, as `YYYY-MM-DD`. */
   readonly max?: string;
+  /** Controlled text shown in the field (`24/11/2026`), for a value that lives in a store or a form library. */
+  readonly value?: string;
+  /** Called with the new text after every change, controlled or not. Read the date with {@link formatDateInput}. */
+  readonly onChange?: (value: string) => void;
 }
 
 /** State and handlers for a `dd/mm/aaaa` field. Wire them like {@link PhoneInput}. */
@@ -301,8 +350,8 @@ export interface DateInput {
 
 const DATE_DIGIT = /\d/;
 
-function initialDate(initialValue: string | null | undefined): FieldText {
-  return { text: initialValue ? formatDate(initialValue) : '', touched: false, caret: null };
+function initialDate(initialValue: string | null | undefined): string {
+  return initialValue ? formatDate(initialValue) : '';
 }
 
 /**
@@ -314,32 +363,37 @@ function initialDate(initialValue: string | null | undefined): FieldText {
  * const delivery = useDateInput({ min: today('NI') });
  * <TextInput ref={delivery.ref} value={delivery.value} onChangeText={delivery.onChangeText} onBlur={delivery.onBlur} keyboardType="number-pad" />
  */
-export function useDateInput({ initialValue, min, max }: UseDateInputOptions = {}): DateInput {
-  const [state, setState] = useState(() => initialDate(initialValue));
-  const ref = useCaret(state.caret, state.text);
+export function useDateInput({ initialValue, min, max, value, onChange }: UseDateInputOptions = {}): DateInput {
+  const [text, update] = useFieldValue(value, onChange, () => initialDate(initialValue));
+  const [interaction, setInteraction] = useState(FRESH);
+  const ref = useCaret(interaction.caret, text);
 
   const handlers = useMemo(
     () => ({
       onChangeText: (next: string) =>
-        setState((current) => {
-          const edit = applyEdit(current.text, next, (typed) => formatDateInput(typed).text, DATE_DIGIT);
-          return { ...current, text: edit.text, caret: edit.caret };
+        update((current) => {
+          const edit = applyEdit(current, next, (typed) => formatDateInput(typed).text, DATE_DIGIT);
+          setInteraction((state) => ({ ...state, caret: edit.caret }));
+          return edit.text;
         }),
-      onBlur: () => setState((current) => (current.touched ? current : { ...current, touched: true })),
-      reset: () => setState(initialDate(initialValue)),
+      onBlur: () => setInteraction((state) => (state.touched ? state : { ...state, touched: true })),
+      reset: () => {
+        setInteraction(FRESH);
+        update(() => initialDate(initialValue));
+      },
     }),
-    [initialValue],
+    [initialValue, update],
   );
 
-  const { date } = formatDateInput(state.text);
+  const { date } = formatDateInput(text);
   const error: DateInputError | null =
-    date === null ? (state.text ? 'format' : null) : min && date < min ? 'min' : max && date > max ? 'max' : null;
+    date === null ? (text ? 'format' : null) : min && date < min ? 'min' : max && date > max ? 'max' : null;
 
   return {
     ref,
-    value: state.text,
+    value: text,
     date: error === null ? date : null,
-    error: state.touched ? error : null,
+    error: interaction.touched ? error : null,
     placeholder: 'dd/mm/aaaa',
     onChangeText: handlers.onChangeText,
     onBlur: handlers.onBlur,
