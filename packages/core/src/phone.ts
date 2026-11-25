@@ -1,16 +1,14 @@
 import {
   type CountryCode as LibCountryCode,
-  type MetadataJson,
   ParseError,
   type PhoneNumber,
   parsePhoneNumberWithError,
   validatePhoneNumberLength,
 } from 'libphonenumber-js/core';
-import metadataJson from './phone-metadata.json';
+import { metadata } from './metadata';
+import examples from './phone-examples.json';
 import { type CountryCode, countryCodes, isCountryCode } from './regions';
 import { requireCountry } from './require';
-
-const metadata = metadataJson as unknown as MetadataJson;
 
 /**
  * Kind of line. `fixed_or_mobile` is used where the numbering plan cannot tell them apart.
@@ -183,4 +181,17 @@ export function isValidPhone(
   options?: PhoneOptions | null,
 ): boolean {
   return validatePhone(input, defaultCountry, options).valid;
+}
+
+/**
+ * An example mobile number of a country, for a placeholder.
+ *
+ * @throws {RangeError} When the country is not supported.
+ * @example phoneExample('NI').national // "8123 4567"
+ */
+export function phoneExample(countryCode: CountryCode): Phone {
+  const { code } = requireCountry(countryCode);
+  const result = validatePhone(examples[code], code);
+  if (!result.valid) throw new RangeError('Falta el número de ejemplo del país.');
+  return result.phone;
 }

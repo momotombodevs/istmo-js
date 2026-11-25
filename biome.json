@@ -15,7 +15,8 @@
       "!**/dist",
       "!**/coverage",
       "!**/package-lock.json",
-      "!**/phone-metadata.json"
+      "!**/phone-metadata.json",
+      "!**/phone-examples.json"
     ]
   },
   "formatter": {

@@ -19,11 +19,12 @@ En Expo use `npx expo install @momotombodevs/istmo`. Funciona en Expo Go.
 - [Importar solo lo que usa](#importar-solo-lo-que-usa)
 - [Convenciones](#convenciones)
 - [Teléfonos](#teléfonos)
+- [Campo de teléfono con React](#campo-de-teléfono-con-react)
 - [Monedas](#monedas)
 - [Fechas y hora local](#fechas-y-hora-local)
 - [Países y monedas](#países-y-monedas)
 - [Qué enviar al servidor](#qué-enviar-al-servidor)
-- [Ejemplos con React](#ejemplos-con-react)
+- [Montos con Inertia](#montos-con-inertia)
 
 ## Importar solo lo que usa
 
@@ -32,10 +33,12 @@ Metro (React Native) no descarta el código que no se usa, así que importe desd
 | Importación | Contiene | Tamaño minificado |
 |-------------|----------|-------------------|
 | `@momotombodevs/istmo/money` | monedas | ~5 kB |
-| `@momotombodevs/istmo/dates` | fechas y hora local | ~4 kB |
-| `@momotombodevs/istmo/regions` | países y monedas | ~3 kB |
-| `@momotombodevs/istmo/phone` | teléfonos (incluye libphonenumber) | ~48 kB |
-| `@momotombodevs/istmo` | todo | ~53 kB |
+| `@momotombodevs/istmo/dates` | fechas y hora local | ~5 kB |
+| `@momotombodevs/istmo/regions` | países, monedas y banderas | ~3 kB |
+| `@momotombodevs/istmo/phone` | validar teléfonos (incluye libphonenumber) | ~49 kB |
+| `@momotombodevs/istmo/phone-input` | formato mientras se escribe | ~68 kB |
+| `@momotombodevs/istmo/react` | `usePhoneInput` (incluye `/phone` y `/phone-input`) | ~84 kB |
+| `@momotombodevs/istmo` | todo menos `/react` | ~88 kB |
 
 Los teléfonos usan [libphonenumber-js](https://gitlab.com/catamphetamine/libphonenumber-js) con la metadata recortada a los siete países (3 kB en lugar de 157 kB).
 
@@ -91,6 +94,128 @@ validatePhone('1234', 'NI'); // { valid: false, error: 'too_short' }
 | `type` | se pidió celular y es fijo | «Escriba un número de celular.» |
 
 `type` puede ser `mobile`, `fixed`, `fixed_or_mobile` (el plan de numeración no los distingue), `toll_free`, `premium`, `voip` u `other`.
+
+Para el campo de texto hay dos ayudas más:
+
+```ts
+import { phoneExample } from '@momotombodevs/istmo/phone';
+import { formatPhoneInput } from '@momotombodevs/istmo/phone-input';
+
+formatPhoneInput('812345', 'NI').text;          // "8123 45": formato mientras se escribe
+formatPhoneInput('(+506) 8312-3456', 'NI').text; // "+506 8312 3456"
+formatPhoneInput('+506 8', 'NI').country;        // "CR": el país del código que se escribió
+phoneExample('PA').national;                     // "6123-4567": para el placeholder
+```
+
+## Campo de teléfono con React
+
+`usePhoneInput` maneja todo el campo: formato mientras se escribe, país elegido, cambio de país al escribir `+` y un código, borrado correcto de los espacios que agrega el formato, ejemplo para el placeholder y validación. No dibuja nada; el selector de bandera y el campo los pone su app con sus componentes. Sirve igual en React Native y en la web.
+
+`react` es una dependencia opcional (React 18 o posterior): solo hace falta si importa `@momotombodevs/istmo/react`.
+
+```tsx
+import { useState } from 'react';
+import { Modal, Pressable, Text, TextInput, View } from 'react-native';
+import type { PhoneError } from '@momotombodevs/istmo/phone';
+import { usePhoneInput } from '@momotombodevs/istmo/react';
+
+const messages: Record<PhoneError, string> = {
+  format: 'Escriba solo el número.',
+  missing_country: 'Elija el país.',
+  too_short: 'Al número le faltan dígitos.',
+  too_long: 'El número tiene dígitos de más.',
+  country: 'Ese número no es de un país aceptado.',
+  invalid: 'Revise el número.',
+  type: 'Escriba un número de celular.',
+};
+
+export function PhoneField({ onChange }: { onChange: (e164: string | null) => void }) {
+  const field = usePhoneInput({ defaultCountry: 'NI', type: 'mobile' });
+  const [choosing, setChoosing] = useState(false);
+
+  return (
+    <View>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <Pressable onPress={() => setChoosing(true)} accessibilityLabel={`País: ${field.country.name}`}>
+          <Text>{field.country.flag} +{field.country.callingCode}</Text>
+        </Pressable>
+        <TextInput
+          value={field.value}
+          onChangeText={field.onChangeText}
+          onBlur={() => {
+            field.onBlur();
+            onChange(field.phone?.e164 ?? null);
+          }}
+          placeholder={field.placeholder}
+          keyboardType="phone-pad"
+          textContentType="telephoneNumber"
+          autoComplete="tel"
+        />
+      </View>
+      {field.error && <Text>{messages[field.error]}</Text>}
+
+      <Modal visible={choosing} onRequestClose={() => setChoosing(false)}>
+        {field.countries.map((country) => (
+          <Pressable
+            key={country.code}
+            onPress={() => {
+              field.setCountry(country.code);
+              setChoosing(false);
+            }}
+          >
+            <Text>{country.flag} {country.name} +{country.callingCode}</Text>
+          </Pressable>
+        ))}
+      </Modal>
+    </View>
+  );
+}
+```
+
+En la web, el mismo hook con un `<select>` y un `<input>`:
+
+```tsx
+import { usePhoneInput } from '@momotombodevs/istmo/react';
+
+export function PhoneField() {
+  const field = usePhoneInput({ defaultCountry: 'NI' });
+
+  return (
+    <div>
+      <select value={field.country.code} onChange={(event) => field.setCountry(event.target.value as typeof field.country.code)}>
+        {field.countries.map((country) => (
+          <option key={country.code} value={country.code}>
+            {country.flag} {country.name} +{country.callingCode}
+          </option>
+        ))}
+      </select>
+      <input
+        type="tel"
+        inputMode="tel"
+        autoComplete="tel"
+        value={field.value}
+        onChange={(event) => field.onChangeText(event.target.value)}
+        onBlur={field.onBlur}
+        placeholder={field.placeholder}
+      />
+      <input type="hidden" name="phone" value={field.phone?.e164 ?? ''} />
+    </div>
+  );
+}
+```
+
+| Valor | Qué es |
+|-------|--------|
+| `value`, `onChangeText`, `onBlur` | para conectar al campo de texto |
+| `country`, `countries`, `setCountry` | país elegido (con `flag`, `name`, `callingCode`) y los que se pueden elegir |
+| `placeholder` | número de ejemplo del país elegido |
+| `phone` | el número válido (envíe `phone.e164`), o `null` mientras esté vacío o no sea válido |
+| `error` | el motivo, solo después de que el campo perdió el foco una vez; `null` si está vacío o es válido |
+| `reset()` | vuelve al valor inicial y oculta el error |
+
+Opciones: `defaultCountry` (obligatoria), `type` y `countries` como en `validatePhone`, e `initialValue` con un número E.164 guardado para editarlo (`'+50581234567'`). El campo vacío no es un error: si el teléfono es obligatorio, compruebe `phone !== null` al enviar.
+
+Las banderas son emoji (`country.flag`). Se ven en iOS, Android y macOS; los navegadores de Windows muestran las dos letras del código en su lugar.
 
 ## Monedas
 
@@ -195,43 +320,7 @@ La validación en la app es para dar buena experiencia; el servidor siempre tien
 | Fecha | el resultado de `parseDate` (`YYYY-MM-DD`) |
 | Fecha y hora elegidas | el resultado de `zonedDateTime` |
 
-## Ejemplos con React
-
-Un campo de teléfono en React Native que entrega el número normalizado:
-
-```tsx
-import { useState } from 'react';
-import { Text, TextInput } from 'react-native';
-import { type PhoneError, validatePhone } from '@momotombodevs/istmo/phone';
-
-const messages: Record<PhoneError, string> = {
-  format: 'Escriba solo el número.',
-  missing_country: 'Elija el país.',
-  too_short: 'Al número le faltan dígitos.',
-  too_long: 'El número tiene dígitos de más.',
-  country: 'Ese número no es de un país aceptado.',
-  invalid: 'Revise el número.',
-  type: 'Escriba un número de celular.',
-};
-
-export function PhoneField({ onValid }: { onValid: (e164: string) => void }) {
-  const [error, setError] = useState<string | null>(null);
-
-  return (
-    <>
-      <TextInput
-        keyboardType="phone-pad"
-        onEndEditing={({ nativeEvent }) => {
-          const result = validatePhone(nativeEvent.text, 'NI', { type: 'mobile' });
-          setError(result.valid ? null : messages[result.error]);
-          if (result.valid) onValid(result.phone.e164);
-        }}
-      />
-      {error && <Text>{error}</Text>}
-    </>
-  );
-}
-```
+## Montos con Inertia
 
 Un monto en un formulario de Inertia que se envía ya normalizado:
 
