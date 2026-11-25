@@ -2,7 +2,15 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { formatDate, formatDateInput, type IsoDate } from './dates';
 import { applyEdit, commonPrefix, commonSuffix } from './formatted-input';
 import { type Amount, formatMoney, formatMoneyInput, parseMoney, toMinorUnits } from './money';
-import { type Phone, type PhoneError, type PhoneOptions, parsePhone, phoneExample, validatePhone } from './phone';
+import {
+  isValidPhone,
+  type Phone,
+  type PhoneError,
+  type PhoneOptions,
+  parsePhone,
+  phoneExample,
+  validatePhone,
+} from './phone';
 import { formatPhoneInput } from './phone-input';
 import {
   countries as allCountries,
@@ -85,6 +93,12 @@ function initialPhone(
     : { value: '', country: requireCountry(defaultCountry).code };
 }
 
+function textForCountry(text: string, country: CountryCode): string {
+  if (text.trimStart().startsWith('+')) return text;
+  const digits = digitsOf(text);
+  return isValidPhone(digits, country) ? formatPhoneInput(digits, country).text : digits;
+}
+
 function useFieldValue<T>(
   controlled: T | undefined,
   onChange: ((value: T) => void) | undefined,
@@ -127,8 +141,8 @@ function useCaret(caret: number | null, text: string): (element: SelectableInput
  *
  * @throws {RangeError} When `defaultCountry` or an option is not valid, or `setCountry` gets a country outside `countries`.
  * @example
- * const field = usePhoneInput({ defaultCountry: 'NI', type: 'mobile' });
- * <TextInput ref={field.ref} value={field.value} onChangeText={field.onChangeText} onBlur={field.onBlur} placeholder={field.placeholder} />
+ * const { ref, value, onChangeText, onBlur, placeholder } = usePhoneInput({ defaultCountry: 'NI', type: 'mobile' });
+ * <TextInput ref={ref} value={value} onChangeText={onChangeText} onBlur={onBlur} placeholder={placeholder} />
  */
 export function usePhoneInput(options: UsePhoneInputOptions): PhoneInput {
   const { defaultCountry, initialValue, type } = options;
@@ -165,7 +179,7 @@ export function usePhoneInput(options: UsePhoneInputOptions): PhoneInput {
       setCountry: (code: CountryCode) => {
         if (!allowed.includes(code)) throw new RangeError('País fuera de la lista countries del campo.');
         setInteraction((state) => ({ ...state, caret: null }));
-        update((current) => ({ value: formatPhoneInput(current.value, code).text, country: code }));
+        update((current) => ({ value: textForCountry(current.value, code), country: code }));
       },
       reset: () => {
         setInteraction(FRESH);
@@ -262,8 +276,8 @@ function amountError(amount: string | null, text: string, currency: CurrencyCode
  *
  * @throws {RangeError} When the currency is not supported or `initialValue`, `min` or `max` is not an amount.
  * @example
- * const price = useMoneyInput({ currency: 'NIO', min: '1' });
- * <TextInput ref={price.ref} value={price.value} onChangeText={price.onChangeText} onBlur={price.onBlur} keyboardType="decimal-pad" />
+ * const { ref, value, onChangeText, onBlur } = useMoneyInput({ currency: 'NIO', min: '1' });
+ * <TextInput ref={ref} value={value} onChangeText={onChangeText} onBlur={onBlur} keyboardType="decimal-pad" />
  */
 export function useMoneyInput({ currency, initialValue, min, max, value, onChange }: UseMoneyInputOptions): MoneyInput {
   const target = requireCurrency(currency);
@@ -360,8 +374,8 @@ function initialDate(initialValue: string | null | undefined): string {
  *
  * @throws {RangeError} When `initialValue` is not a valid `YYYY-MM-DD` date.
  * @example
- * const delivery = useDateInput({ min: today('NI') });
- * <TextInput ref={delivery.ref} value={delivery.value} onChangeText={delivery.onChangeText} onBlur={delivery.onBlur} keyboardType="number-pad" />
+ * const { ref, value, onChangeText, onBlur } = useDateInput({ min: today('NI') });
+ * <TextInput ref={ref} value={value} onChangeText={onChangeText} onBlur={onBlur} keyboardType="number-pad" />
  */
 export function useDateInput({ initialValue, min, max, value, onChange }: UseDateInputOptions = {}): DateInput {
   const [text, update] = useFieldValue(value, onChange, () => initialDate(initialValue));

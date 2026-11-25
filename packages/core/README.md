@@ -113,6 +113,8 @@ phoneExample('PA').national;                     // "6123-4567": para el placeho
 
 `react` es una dependencia opcional (React 18 o posterior): solo hace falta si importa `@momotombodevs/istmo/react`.
 
+Desestructure lo que devuelve el hook, como en los ejemplos. El resultado incluye `ref`, y con el React Compiler la regla `react-hooks/refs` marca como error leer `field.value` u otra propiedad del mismo objeto durante el render.
+
 ```tsx
 import { useState } from 'react';
 import { Modal, Pressable, Text, TextInput, View } from 'react-native';
@@ -129,42 +131,43 @@ const messages: Record<PhoneError, string> = {
   type: 'Escriba un número de celular.',
 };
 
-export function PhoneField({ onChange }: { onChange: (e164: string | null) => void }) {
-  const field = usePhoneInput({ defaultCountry: 'NI', type: 'mobile' });
+export function PhoneField({ onSave }: { onSave: (e164: string | null) => void }) {
+  const { ref, value, onChangeText, onBlur, placeholder, phone, error, country, countries, setCountry } =
+    usePhoneInput({ defaultCountry: 'NI', type: 'mobile' });
   const [choosing, setChoosing] = useState(false);
 
   return (
     <View>
       <View style={{ flexDirection: 'row', gap: 8 }}>
-        <Pressable onPress={() => setChoosing(true)} accessibilityLabel={`País: ${field.country.name}`}>
-          <Text>{field.country.flag} +{field.country.callingCode}</Text>
+        <Pressable onPress={() => setChoosing(true)} accessibilityLabel={`País: ${country.name}`}>
+          <Text>{country.flag} +{country.callingCode}</Text>
         </Pressable>
         <TextInput
-          ref={field.ref}
-          value={field.value}
-          onChangeText={field.onChangeText}
+          ref={ref}
+          value={value}
+          onChangeText={onChangeText}
           onBlur={() => {
-            field.onBlur();
-            onChange(field.phone?.e164 ?? null);
+            onBlur();
+            onSave(phone?.e164 ?? null);
           }}
-          placeholder={field.placeholder}
+          placeholder={placeholder}
           keyboardType="phone-pad"
           textContentType="telephoneNumber"
           autoComplete="tel"
         />
       </View>
-      {field.error && <Text>{messages[field.error]}</Text>}
+      {error && <Text>{messages[error]}</Text>}
 
       <Modal visible={choosing} onRequestClose={() => setChoosing(false)}>
-        {field.countries.map((country) => (
+        {countries.map((option) => (
           <Pressable
-            key={country.code}
+            key={option.code}
             onPress={() => {
-              field.setCountry(country.code);
+              setCountry(option.code);
               setChoosing(false);
             }}
           >
-            <Text>{country.flag} {country.name} +{country.callingCode}</Text>
+            <Text>{option.flag} {option.name} +{option.callingCode}</Text>
           </Pressable>
         ))}
       </Modal>
@@ -179,28 +182,30 @@ En la web, el mismo hook con un `<select>` y un `<input>`:
 import { usePhoneInput } from '@momotombodevs/istmo/react';
 
 export function PhoneField() {
-  const field = usePhoneInput({ defaultCountry: 'NI' });
+  const { ref, value, onChangeText, onBlur, placeholder, phone, country, countries, setCountry } = usePhoneInput({
+    defaultCountry: 'NI',
+  });
 
   return (
     <div>
-      <select value={field.country.code} onChange={(event) => field.setCountry(event.target.value as typeof field.country.code)}>
-        {field.countries.map((country) => (
-          <option key={country.code} value={country.code}>
-            {country.flag} {country.name} +{country.callingCode}
+      <select value={country.code} onChange={(event) => setCountry(event.target.value as typeof country.code)}>
+        {countries.map((option) => (
+          <option key={option.code} value={option.code}>
+            {option.flag} {option.name} +{option.callingCode}
           </option>
         ))}
       </select>
       <input
-        ref={field.ref}
+        ref={ref}
         type="tel"
         inputMode="tel"
         autoComplete="tel"
-        value={field.value}
-        onChange={(event) => field.onChangeText(event.target.value)}
-        onBlur={field.onBlur}
-        placeholder={field.placeholder}
+        value={value}
+        onChange={(event) => onChangeText(event.target.value)}
+        onBlur={onBlur}
+        placeholder={placeholder}
       />
-      <input type="hidden" name="phone" value={field.phone?.e164 ?? ''} />
+      <input type="hidden" name="phone" value={phone?.e164 ?? ''} />
     </div>
   );
 }
@@ -223,11 +228,11 @@ Si el valor vive en otro lado (zustand, Redux, React Hook Form), pase `value` y 
 
 ```tsx
 const { phone, phoneCountry, setPhone } = useCustomerStore();
-const field = usePhoneInput({
+const { ref, value, onChangeText, onBlur } = usePhoneInput({
   defaultCountry: 'NI',
   value: phone,
   country: phoneCountry,
-  onChange: ({ value, country }) => setPhone(value, country),
+  onChange: (change) => setPhone(change.value, change.country),
 });
 ```
 
@@ -395,28 +400,34 @@ import { Text, TextInput, View } from 'react-native';
 import { today } from '@momotombodevs/istmo/dates';
 import { useDateInput, useMoneyInput } from '@momotombodevs/istmo/react';
 
-export function DeliveryFields() {
-  const tip = useMoneyInput({ currency: 'NIO', max: '1000' });
-  const day = useDateInput({ min: today('NI') });
+export function TipField() {
+  const { ref, value, onChangeText, onBlur, currency, error } = useMoneyInput({ currency: 'NIO', max: '1000' });
 
   return (
     <View>
       <View style={{ flexDirection: 'row' }}>
-        <Text>{tip.currency.symbol}</Text>
-        <TextInput ref={tip.ref} value={tip.value} onChangeText={tip.onChangeText} onBlur={tip.onBlur} keyboardType="decimal-pad" />
+        <Text>{currency.symbol}</Text>
+        <TextInput ref={ref} value={value} onChangeText={onChangeText} onBlur={onBlur} keyboardType="decimal-pad" />
       </View>
-      {tip.error === 'max' && <Text>La propina máxima es C$ 1,000.</Text>}
+      {error === 'max' && <Text>La propina máxima es C$ 1,000.</Text>}
+    </View>
+  );
+}
 
+export function DeliveryDayField() {
+  const { ref, value, onChangeText, onBlur, placeholder, error } = useDateInput({ min: today('NI') });
+
+  return (
+    <View>
       <TextInput
-        ref={day.ref}
-        value={day.value}
-        onChangeText={day.onChangeText}
-        onBlur={day.onBlur}
-        placeholder={day.placeholder}
+        ref={ref}
+        value={value}
+        onChangeText={onChangeText}
+        onBlur={onBlur}
+        placeholder={placeholder}
         keyboardType="number-pad"
       />
-      {day.error === 'min' && <Text>Elija hoy o un día después.</Text>}
-      {day.error === 'format' && <Text>Escriba la fecha como dd/mm/aaaa.</Text>}
+      {error && <Text>Elija una fecha válida, de hoy en adelante.</Text>}
     </View>
   );
 }
@@ -436,19 +447,19 @@ import { useForm } from '@inertiajs/react';
 import { useMoneyInput } from '@momotombodevs/istmo/react';
 
 export function PriceForm() {
-  const price = useMoneyInput({ currency: 'NIO', min: '1' });
+  const { ref, value, onChangeText, onBlur, amount, error } = useMoneyInput({ currency: 'NIO', min: '1' });
   const form = useForm({});
 
   return (
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        if (price.amount === null) return;
-        form.transform(() => ({ price: price.amount, currency: 'NIO' })).post('/prices');
+        if (amount === null) return;
+        form.transform(() => ({ price: amount, currency: 'NIO' })).post('/prices');
       }}
     >
-      <input ref={price.ref} inputMode="decimal" value={price.value} onChange={(event) => price.onChangeText(event.target.value)} onBlur={price.onBlur} />
-      {price.error && <p>Escriba un monto de C$ 1 o más.</p>}
+      <input ref={ref} inputMode="decimal" value={value} onChange={(event) => onChangeText(event.target.value)} onBlur={onBlur} />
+      {error && <p>Escriba un monto de C$ 1 o más.</p>}
     </form>
   );
 }
