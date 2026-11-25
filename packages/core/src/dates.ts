@@ -1,12 +1,14 @@
-import { type Country, type CountryCode, requireCountry } from './regions';
+import type { Country, CountryCode } from './regions';
+import { requireCountry } from './require';
 
-/** A calendar date written as `YYYY-MM-DD`. */
+/** A calendar date written as `YYYY-MM-DD`, as returned by {@link parseDate} and {@link today}. The type only hints the shape. */
 export type IsoDate = `${number}-${number}-${number}`;
 
 /**
- * A moment in time: a `Date`, milliseconds since the epoch, or ISO 8601 text that includes `Z` or an offset
- * (`2026-11-24T20:30:00Z`, `2026-11-24T14:30:00-06:00`). Text without an offset is rejected because its
- * meaning would depend on the device time zone.
+ * A moment in time: a `Date`, milliseconds since the epoch, or ISO 8601 text with uppercase `T` and `Z` or an
+ * offset (`2026-11-24T20:30:00Z`, `2026-11-24T14:30:00-06:00`). The text is read by this library, not by
+ * `Date.parse`, so every engine gives the same result. Text without an offset, or with a date or time that does
+ * not exist, is rejected.
  */
 export type Instant = Date | number | string;
 
@@ -22,7 +24,7 @@ export interface LocalDateTime {
 
 const LOCAL_DATE = /^(\d{1,2})([/-])(\d{1,2})\2(\d{4})$/;
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
-const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?(?:Z|[+-]\d{2}:\d{2})$/i;
+const ISO_INSTANT = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?(?:Z|([+-])(\d{2}):(\d{2}))$/;
 const TIME = /^(\d{1,2}):(\d{2})$/;
 
 const pad = (value: number, length = 2): string => String(value).padStart(length, '0');
@@ -59,16 +61,43 @@ function requireIsoDate(date: string): void {
   }
 }
 
-function toEpoch(instant: Instant): number {
-  if (typeof instant === 'string' && !ISO_INSTANT.test(instant.trim())) {
-    throw new RangeError('Instante inválido: use ISO 8601 con Z o con desfase, como 2026-11-24T20:30:00Z.');
+function utcEpoch(year: number, month: number, day: number, minutes: number, milliseconds: number): number {
+  const moment = new Date(0);
+  moment.setUTCFullYear(year, month - 1, day);
+  return moment.getTime() + minutes * 60_000 + milliseconds;
+}
+
+function invalidInstant(): RangeError {
+  return new RangeError('Instante inválido: use ISO 8601 con Z o con desfase, como 2026-11-24T20:30:00Z.');
+}
+
+const toNumber = (part: string | undefined): number => Number(part ?? 0);
+
+function parseInstant(text: string): number {
+  const match = ISO_INSTANT.exec(text.trim());
+  if (!match) throw invalidInstant();
+  const [year, month, day, hours, minutes, seconds, fraction = '', sign, offsetHours, offsetMinutes] = match.slice(1);
+  const date = { year: toNumber(year), month: toNumber(month), day: toNumber(day) };
+  const time = { hours: toNumber(hours), minutes: toNumber(minutes), seconds: toNumber(seconds) };
+  const offset = { hours: toNumber(offsetHours), minutes: toNumber(offsetMinutes) };
+  if (
+    toIsoDate(date.year, date.month, date.day) === null ||
+    time.hours > 23 ||
+    time.minutes > 59 ||
+    time.seconds > 59 ||
+    offset.hours > 23 ||
+    offset.minutes > 59
+  ) {
+    throw invalidInstant();
   }
+  const offsetMinutesTotal = (sign === '-' ? -1 : 1) * (offset.hours * 60 + offset.minutes);
+  const milliseconds = time.seconds * 1000 + Number(fraction.padEnd(3, '0').slice(0, 3));
+  return utcEpoch(date.year, date.month, date.day, time.hours * 60 + time.minutes - offsetMinutesTotal, milliseconds);
+}
+
+function toEpoch(instant: Instant): number {
   const time =
-    typeof instant === 'string'
-      ? Date.parse(instant.trim())
-      : typeof instant === 'number'
-        ? instant
-        : instant.getTime();
+    typeof instant === 'string' ? parseInstant(instant) : typeof instant === 'number' ? instant : instant.getTime();
   if (!Number.isFinite(time)) throw new RangeError('Instante inválido.');
   return time;
 }
@@ -102,7 +131,7 @@ export function isValidDate(input: unknown): boolean {
  * @throws {RangeError} When the date is not a valid `YYYY-MM-DD` date.
  * @example formatDate('2026-11-24') // "24/11/2026"
  */
-export function formatDate(date: IsoDate | string): string {
+export function formatDate(date: string): string {
   requireIsoDate(date);
   const [year, month, day] = date.split('-');
   return `${day}/${month}/${year}`;
@@ -143,7 +172,7 @@ export function today(countryCode: CountryCode, instant?: Instant): IsoDate {
  * @throws {RangeError} When the date, the time or the country is not valid.
  * @example zonedDateTime('2026-11-24', '14:30', 'NI') // "2026-11-24T14:30:00-06:00"
  */
-export function zonedDateTime(date: IsoDate | string, time: string, countryCode: CountryCode): string {
+export function zonedDateTime(date: string, time: string, countryCode: CountryCode): string {
   const target = requireCountry(countryCode);
   requireIsoDate(date);
   const match = typeof time === 'string' ? TIME.exec(time.trim()) : null;

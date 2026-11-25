@@ -117,6 +117,42 @@
         "international": "+505 1800 1234",
         "region": "NI",
         "type": "toll_free"
+      },
+      {
+        "input": "+505 (8123) 4567",
+        "country": null,
+        "e164": "+50581234567",
+        "national": "8123 4567",
+        "international": "+505 8123 4567",
+        "region": "NI",
+        "type": "mobile"
+      },
+      {
+        "input": "8123 - 4567",
+        "country": "NI",
+        "e164": "+50581234567",
+        "national": "8123 4567",
+        "international": "+505 8123 4567",
+        "region": "NI",
+        "type": "mobile"
+      },
+      {
+        "input": "8123.4567",
+        "country": "NI",
+        "e164": "+50581234567",
+        "national": "8123 4567",
+        "international": "+505 8123 4567",
+        "region": "NI",
+        "type": "mobile"
+      },
+      {
+        "input": "8123/4567",
+        "country": "NI",
+        "e164": "+50581234567",
+        "national": "8123 4567",
+        "international": "+505 8123 4567",
+        "region": "NI",
+        "type": "mobile"
       }
     ],
     "invalid": [
@@ -230,7 +266,7 @@
         "input": "+ 8123",
         "country": "NI",
         "options": {},
-        "error": "country"
+        "error": "format"
       },
       {
         "input": "1-800-1234",
@@ -239,6 +275,54 @@
           "type": "mobile"
         },
         "error": "type"
+      },
+      {
+        "input": "((8123 4567",
+        "country": "NI",
+        "options": {},
+        "error": "format"
+      },
+      {
+        "input": "8123 4567)",
+        "country": "NI",
+        "options": {},
+        "error": "format"
+      },
+      {
+        "input": "//8123 4567",
+        "country": "NI",
+        "options": {},
+        "error": "format"
+      },
+      {
+        "input": "8123..4567",
+        "country": "NI",
+        "options": {},
+        "error": "format"
+      },
+      {
+        "input": "8123 -- 4567",
+        "country": "NI",
+        "options": {},
+        "error": "format"
+      },
+      {
+        "input": "(8123 4567",
+        "country": "NI",
+        "options": {},
+        "error": "format"
+      },
+      {
+        "input": "8123 4567 -",
+        "country": "NI",
+        "options": {},
+        "error": "format"
+      },
+      {
+        "input": "+",
+        "country": "NI",
+        "options": {},
+        "error": "format"
       }
     ],
     "validWithOptions": [
@@ -256,6 +340,48 @@
           "countries": ["NI", "CR"],
           "type": "mobile"
         }
+      }
+    ],
+    "optionErrors": [
+      {
+        "input": "2222 2222",
+        "country": "NI",
+        "options": {
+          "type": "Mobile"
+        }
+      },
+      {
+        "input": "8123 4567",
+        "country": "NI",
+        "options": {
+          "countries": "NI"
+        }
+      },
+      {
+        "input": "8123 4567",
+        "country": "NI",
+        "options": {
+          "countries": [null]
+        }
+      },
+      {
+        "input": "8123 4567",
+        "country": "NI",
+        "options": {
+          "countries": ["ni"]
+        }
+      },
+      {
+        "input": "8123 4567",
+        "country": "NI",
+        "options": {
+          "countries": ["MX"]
+        }
+      },
+      {
+        "input": "8123 4567",
+        "country": "ni",
+        "options": {}
       }
     ]
   },
@@ -366,12 +492,6 @@
         "expected": "1,250.50"
       },
       {
-        "amount": "1250.5",
-        "currency": "nio",
-        "options": {},
-        "expected": "C$ 1,250.50"
-      },
-      {
         "amount": "0.004",
         "currency": "USD",
         "options": {},
@@ -414,6 +534,10 @@
       {
         "amount": "+5",
         "currency": "NIO"
+      },
+      {
+        "amount": "1250.5",
+        "currency": "nio"
       }
     ],
     "parse": [
@@ -556,6 +680,21 @@
         "input": "１２",
         "currency": "NIO",
         "expected": null
+      },
+      {
+        "input": "1\n234,5",
+        "currency": "CRC",
+        "expected": null
+      },
+      {
+        "input": "1\t234",
+        "currency": "CRC",
+        "expected": null
+      },
+      {
+        "input": "1 234,5",
+        "currency": "CRC",
+        "expected": "1234.50"
       }
     ],
     "minorUnits": [
@@ -582,6 +721,16 @@
         "currency": "USD",
         "minor": 10,
         "back": "0.10"
+      }
+    ],
+    "parseErrors": [
+      {
+        "input": "5",
+        "currency": "nio"
+      },
+      {
+        "input": "5",
+        "currency": "EUR"
       }
     ]
   },
@@ -727,6 +876,27 @@
         "date": "2026-11-24",
         "time": "14:30",
         "iso": "2026-11-24T14:30:00-06:00"
+      },
+      {
+        "instant": "2028-02-29T12:00:00+05:30",
+        "country": "NI",
+        "date": "2028-02-29",
+        "time": "00:30",
+        "iso": "2028-02-29T00:30:00-06:00"
+      },
+      {
+        "instant": "2026-11-24T10:00Z",
+        "country": "CR",
+        "date": "2026-11-24",
+        "time": "04:00",
+        "iso": "2026-11-24T04:00:00-06:00"
+      },
+      {
+        "instant": "2026-12-31T23:59:59.999-05:00",
+        "country": "PA",
+        "date": "2026-12-31",
+        "time": "23:59",
+        "iso": "2026-12-31T23:59:59-05:00"
       }
     ],
     "zoned": [
@@ -783,6 +953,46 @@
       {
         "instant": "2026-11-24T20:30:00Z",
         "country": "MX"
+      },
+      {
+        "instant": "2026-02-30T10:00:00Z",
+        "country": "NI"
+      },
+      {
+        "instant": "2026-02-29T10:00:00Z",
+        "country": "NI"
+      },
+      {
+        "instant": "2026-11-24T24:00:00Z",
+        "country": "NI"
+      },
+      {
+        "instant": "2026-11-24T10:60:00Z",
+        "country": "NI"
+      },
+      {
+        "instant": "2026-11-24T10:00:60Z",
+        "country": "NI"
+      },
+      {
+        "instant": "2026-11-24t10:00:00z",
+        "country": "NI"
+      },
+      {
+        "instant": "2026-11-24T10:00:00+24:00",
+        "country": "NI"
+      },
+      {
+        "instant": "2026-11-24T10:00:00+05:60",
+        "country": "NI"
+      },
+      {
+        "instant": "2026-11-24T10:00:00.1234567891Z",
+        "country": "NI"
+      },
+      {
+        "instant": "0000-01-01T00:00:00Z",
+        "country": "NI"
       }
     ]
   },

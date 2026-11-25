@@ -42,9 +42,9 @@ Los teléfonos usan [libphonenumber-js](https://gitlab.com/catamphetamine/libpho
 ## Convenciones
 
 - **`parse*`, `validate*` e `is*` nunca lanzan errores por lo que escribe una persona.** Devuelven `null`, `false` o `{ valid: false, error }`, también si reciben `undefined` o un número.
-- **`format*`, `toMinorUnits`, `localDateTime` y similares lanzan `RangeError` cuando el programa los usa mal**: moneda o país no soportado, monto o fecha con formato incorrecto. Los mensajes no incluyen el valor recibido, para no filtrar datos personales a los logs.
+- **Todas lanzan `RangeError` cuando el programa las usa mal**: moneda, país u opción que no existe, o monto, fecha o instante con formato incorrecto en `format*`, `toMinorUnits` y `localDateTime`. Es un error de programación, nunca lo provoca lo que escribe la persona. Los mensajes no incluyen el valor recibido, para no filtrar datos personales a los logs.
 - **El valor va primero y el país o la moneda al final**: `formatMoney(monto, moneda)`, `parsePhone(texto, país)`. Cuando lo único que se pasa es el país, va primero: `today('NI')`.
-- **Los códigos van en mayúsculas** (`'NI'`, `'NIO'`). Las funciones aceptan minúsculas, pero los tipos de TypeScript solo aceptan mayúsculas, y `isCountryCode` e `isCurrencyCode` solo dan `true` con mayúsculas exactas.
+- **Los códigos van exactos, en mayúsculas** (`'NI'`, `'NIO'`), en los tipos y al ejecutar: `'ni'` lanza `RangeError`. Si el código viene de una API, compruébelo una vez con `isCountryCode` o `isCurrencyCode`, y después úselo con su tipo.
 - **Los datos exportados están congelados** (`Object.freeze`): ningún código puede cambiarlos.
 
 ## Teléfonos
@@ -76,10 +76,10 @@ validatePhone('1234', 'NI'); // { valid: false, error: 'too_short' }
 | `parsePhone(texto, país?, opciones?)` | `Phone` o `null` |
 | `isValidPhone(texto, país?, opciones?)` | `boolean` |
 
-- `país` se usa para números escritos sin `+`. Si no es uno de los siete países, lanza `RangeError`.
-- `opciones.type`: `'mobile'` solo acepta números que reciben SMS o WhatsApp (`mobile` y `fixed_or_mobile`). Por defecto `'any'`.
-- `opciones.countries`: limita los países aceptados. Por defecto, los siete.
-- Se aceptan dígitos, espacios, `+`, `-`, `.`, `/` y paréntesis. Cualquier otro texto (letras, extensiones, `;`) se rechaza como `format`.
+- `país` se usa para números escritos sin `+`. Si no es uno de los siete códigos exactos, lanza `RangeError`.
+- `opciones.type`: `'mobile'` solo acepta números que reciben SMS o WhatsApp (`mobile` y `fixed_or_mobile`). Por defecto `'any'`. Otro valor lanza `RangeError`, así una opción mal escrita no deja pasar números fijos.
+- `opciones.countries`: limita los países aceptados. Por defecto, los siete. Tiene que ser un arreglo de códigos exactos; si no, lanza `RangeError`.
+- El número se escribe como grupos de dígitos separados por un espacio, `-`, `.` o `/`, con `+` opcional al inicio y un grupo entre paréntesis si se quiere: `+505 8123-4567`, `(+506) 8312 3456`, `8123.4567`. Cualquier otra cosa (letras, extensiones, `;`, `((`, `..`, separadores al final) se rechaza como `format`.
 
 | `error` | Significado | Mensaje sugerido |
 |---------|-------------|------------------|
@@ -118,7 +118,7 @@ fromMinorUnits(1234, 'USD');   // "12.34"
 ```
 
 - `formatMoney` redondea la mitad hacia afuera sobre el texto decimal: `1.005` da `1.01` y `2.345` da `2.35`. Entre el símbolo y el número va un espacio de no separación (` `), para que no queden en líneas distintas.
-- `parseMoney` acepta el símbolo o el código de esa moneda (sin importar mayúsculas), sus separadores de miles y de decimales, y en colones también el punto como decimal. Devuelve siempre los decimales completos de la moneda. No acepta negativos, porque está pensado para lo que escribe una persona.
+- `parseMoney` acepta el símbolo o el código de esa moneda (sin importar mayúsculas), sus separadores de miles y de decimales, y en colones también el punto como decimal. En colones, el separador de miles puede ser un espacio, un espacio de no separación o un espacio fino; un salto de línea o un tabulador no. Devuelve siempre los decimales completos de la moneda. No acepta negativos, porque está pensado para lo que escribe una persona.
 - La parte entera admite hasta 30 dígitos (`MAX_INTEGER_DIGITS`) y `parseMoney` ignora textos de más de 64 caracteres, así un texto pegado muy largo no congela la pantalla.
 
 | Moneda | Ejemplo |
@@ -157,7 +157,10 @@ zonedDateTime('2026-11-24', '14:30', 'NI');    // "2026-11-24T14:30:00-06:00"
 | `localDateTime(país, instante?)` | `{ date, time, iso }` en ese país |
 | `zonedDateTime(fecha, "HH:MM", país)` | ISO 8601 con el desfase del país, para enviar una fecha y hora elegidas (una reserva, una entrega) |
 
-`instante` es un `Date`, milisegundos, o texto ISO 8601 **con** `Z` o desfase (`2026-11-24T20:30:00Z`). Un texto sin desfase, como `2026-11-24` o `2026-11-24T10:00`, lanza `RangeError`, porque su significado dependería de la zona del dispositivo.
+`instante` es un `Date`, milisegundos, o texto ISO 8601 **con** `Z` o desfase, con `T` y `Z` en mayúscula (`2026-11-24T20:30:00Z`). La librería lee el texto ella misma, sin `Date.parse`, así que Hermes y V8 dan el mismo resultado. Lanza `RangeError` con:
+
+- un texto sin desfase, como `2026-11-24` o `2026-11-24T10:00`, porque su significado dependería de la zona del dispositivo;
+- una fecha u hora que no existe, como `2026-02-30T10:00:00Z` o `24:00`, que `Date.parse` convertiría en otra fecha sin avisar.
 
 ## Países y monedas
 

@@ -46,6 +46,12 @@ describe('phone', () => {
     });
   });
 
+  it.each(vectors.phone.optionErrors)('refuses options $options with country $country', (vector) => {
+    expect(() =>
+      validatePhone(vector.input, vector.country as CountryCode, vector.options as unknown as PhoneOptions),
+    ).toThrow(RangeError);
+  });
+
   it.each(vectors.phone.validWithOptions)('accepts $input with options', (vector) => {
     expect(isValidPhone(vector.input, asCountry(vector.country), vector.options as PhoneOptions)).toBe(true);
   });
@@ -62,6 +68,10 @@ describe('money', () => {
 
   it.each(vectors.money.parse)('parses "$input" as $expected', ({ input, currency, expected }) => {
     expect(parseMoney(input, asCurrency(currency))).toBe(expected);
+  });
+
+  it.each(vectors.money.parseErrors)('refuses to parse with currency $currency', ({ input, currency }) => {
+    expect(() => parseMoney(input, asCurrency(currency))).toThrow(RangeError);
   });
 
   it.each(vectors.money.minorUnits)(

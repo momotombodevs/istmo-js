@@ -1,10 +1,19 @@
 import data from './regions.json';
 
+/** Codes of every supported country, in the same order as {@link countries}. */
+export const countryCodes = ['GT', 'BZ', 'SV', 'HN', 'NI', 'CR', 'PA'] as const;
+
+/** Codes of every supported currency, in the same order as {@link currencies}. */
+export const currencyCodes = ['GTQ', 'BZD', 'HNL', 'NIO', 'CRC', 'PAB', 'USD'] as const;
+
+Object.freeze(countryCodes);
+Object.freeze(currencyCodes);
+
 /** ISO 3166-1 alpha-2 code of a supported Central American country. */
-export type CountryCode = 'GT' | 'BZ' | 'SV' | 'HN' | 'NI' | 'CR' | 'PA';
+export type CountryCode = (typeof countryCodes)[number];
 
 /** ISO 4217 code of a supported currency. */
-export type CurrencyCode = 'GTQ' | 'BZD' | 'HNL' | 'NIO' | 'CRC' | 'PAB' | 'USD';
+export type CurrencyCode = (typeof currencyCodes)[number];
 
 /** UTC offset written as `±HH:MM`, e.g. `-06:00`. */
 export type UtcOffset = `${'+' | '-'}${number}:${number}`;
@@ -53,34 +62,22 @@ export const countries: readonly Country[] = deepFreeze(data.countries as Countr
 /** Every supported currency, frozen. */
 export const currencies: readonly Currency[] = deepFreeze(data.currencies as Currency[]);
 
-/** Codes of every supported country, in the same order as {@link countries}. */
-export const countryCodes: readonly CountryCode[] = Object.freeze(countries.map(({ code }) => code));
-
-/** Codes of every supported currency, in the same order as {@link currencies}. */
-export const currencyCodes: readonly CurrencyCode[] = Object.freeze(currencies.map(({ code }) => code));
-
-function normalize(code: unknown): string {
-  return typeof code === 'string' ? code.toUpperCase() : '';
-}
-
 /**
- * Finds a country by code. Case-insensitive; surrounding spaces are not removed.
+ * Finds a country by its exact uppercase code.
  *
  * @example country('NI')?.callingCode // "505"
  */
 export function country(code: CountryCode): Country | undefined {
-  const wanted = normalize(code);
-  return countries.find((entry) => entry.code === wanted);
+  return countries.find((entry) => entry.code === code);
 }
 
 /**
- * Finds a currency by code. Case-insensitive; surrounding spaces are not removed.
+ * Finds a currency by its exact uppercase code.
  *
  * @example currency('CRC')?.symbol // "₡"
  */
 export function currency(code: CurrencyCode): Currency | undefined {
-  const wanted = normalize(code);
-  return currencies.find((entry) => entry.code === wanted);
+  return currencies.find((entry) => entry.code === code);
 }
 
 /**
@@ -90,7 +87,7 @@ export function currency(code: CurrencyCode): Currency | undefined {
  * @example isCountryCode('ni') // false
  */
 export function isCountryCode(value: unknown): value is CountryCode {
-  return typeof value === 'string' && (countryCodes as readonly string[]).includes(value);
+  return (countryCodes as readonly unknown[]).includes(value);
 }
 
 /**
@@ -100,7 +97,7 @@ export function isCountryCode(value: unknown): value is CountryCode {
  * @example isCurrencyCode('EUR') // false
  */
 export function isCurrencyCode(value: unknown): value is CurrencyCode {
-  return typeof value === 'string' && (currencyCodes as readonly string[]).includes(value);
+  return (currencyCodes as readonly unknown[]).includes(value);
 }
 
 /**
@@ -110,18 +107,5 @@ export function isCurrencyCode(value: unknown): value is CurrencyCode {
  * @example acceptsCurrency('NI', 'GTQ') // false
  */
 export function acceptsCurrency(countryCode: CountryCode, currencyCode: CurrencyCode): boolean {
-  const target = currency(currencyCode);
-  return target !== undefined && (country(countryCode)?.currencies.includes(target.code) ?? false);
-}
-
-export function requireCountry(code: CountryCode): Country {
-  const found = country(code);
-  if (!found) throw new RangeError('País no soportado.');
-  return found;
-}
-
-export function requireCurrency(code: CurrencyCode): Currency {
-  const found = currency(code);
-  if (!found) throw new RangeError('Moneda no soportada.');
-  return found;
+  return country(countryCode)?.currencies.includes(currencyCode) ?? false;
 }
