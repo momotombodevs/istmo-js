@@ -16,11 +16,11 @@ try {
   execFileSync('npm', ['install', '--silent', '--no-audit', '--no-fund', join(workDir, tarball)], { cwd: workDir });
 
   const esm = `
-    import { formatMoney, parsePhone, today } from '@momotombo/istmo';
-    import { parseMoney } from '@momotombo/istmo/money';
-    import { isValidPhone } from '@momotombo/istmo/phone';
-    import { parseDate } from '@momotombo/istmo/dates';
-    import { countries } from '@momotombo/istmo/regions';
+    import { formatMoney, parsePhone, today } from '@momotombodevs/istmo';
+    import { parseMoney } from '@momotombodevs/istmo/money';
+    import { isValidPhone } from '@momotombodevs/istmo/phone';
+    import { parseDate } from '@momotombodevs/istmo/dates';
+    import { countries } from '@momotombodevs/istmo/regions';
     const checks = [
       formatMoney('1250.5', 'NIO') === 'C$\\u00a01,250.50',
       parsePhone('8123 4567', 'NI')?.e164 === '+50581234567',
@@ -33,8 +33,8 @@ try {
     if (checks.includes(false)) throw new Error('ESM smoke test failed: ' + JSON.stringify(checks));
   `;
   const cjs = `
-    const { formatMoney } = require('@momotombo/istmo');
-    const { parsePhone } = require('@momotombo/istmo/phone');
+    const { formatMoney } = require('@momotombodevs/istmo');
+    const { parsePhone } = require('@momotombodevs/istmo/phone');
     if (formatMoney('5', 'USD') !== '$\\u00a05.00' || parsePhone('8123 4567', 'NI')?.e164 !== '+50581234567') {
       throw new Error('CJS smoke test failed');
     }

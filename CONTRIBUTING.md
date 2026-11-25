@@ -36,6 +36,6 @@ npm run build:metadata --workspace packages/core
 
 La publicación la hace GitHub Actions con [trusted publishing](https://docs.npmjs.com/trusted-publishers) y provenance; nadie publica desde su máquina.
 
-1. Configuración inicial (una sola vez): en npmjs.com, en el paquete `@momotombo/istmo`, agregue como publicador confiable el repo `momotombodevs/istmo-js`, el workflow `release.yml` y el entorno `npm`. En GitHub, cree el entorno `npm` con revisores requeridos.
+1. Configuración inicial (una sola vez): en npmjs.com, en el paquete `@momotombodevs/istmo`, agregue como publicador confiable el repo `momotombodevs/istmo-js`, el workflow `release.yml` y el entorno `npm`. En GitHub, cree el entorno `npm` con revisores requeridos.
 2. Suba la versión en `packages/core/package.json` y mueva lo de `[Unreleased]` a esa versión en `CHANGELOG.md`.
 3. Haga merge a `main`, cree la etiqueta `vX.Y.Z` y súbala. El workflow comprueba que la etiqueta coincida con la versión, corre todas las pruebas y publica.
