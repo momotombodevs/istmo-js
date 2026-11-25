@@ -195,8 +195,6 @@ La validación en la app es para dar buena experiencia; el servidor siempre tien
 | Fecha | el resultado de `parseDate` (`YYYY-MM-DD`) |
 | Fecha y hora elegidas | el resultado de `zonedDateTime` |
 
-El paquete PHP/Laravel [`momotombo/istmo`](https://github.com/momotombodevs/istmo) usa los mismos datos y los mismos casos de prueba, así que valida igual en el servidor.
-
 ## Ejemplos con React
 
 Un campo de teléfono en React Native que entrega el número normalizado:

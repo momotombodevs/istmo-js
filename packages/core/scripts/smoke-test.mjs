@@ -43,7 +43,49 @@ try {
   writeFileSync(join(workDir, 'cjs.cjs'), cjs);
   execFileSync('node', ['esm.mjs'], { cwd: workDir, stdio: 'inherit' });
   execFileSync('node', ['cjs.cjs'], { cwd: workDir, stdio: 'inherit' });
-  console.log(`Smoke test passed for ${tarball} (ESM, CJS and every subpath).`);
+
+  const consumer = `
+    import { type PhoneError, formatMoney, validatePhone } from '@momotombodevs/istmo';
+    import { parseMoney } from '@momotombodevs/istmo/money';
+    import { isCountryCode, country } from '@momotombodevs/istmo/regions';
+    const messages: Record<PhoneError, string> = {
+      format: 'a', missing_country: 'b', too_short: 'c', too_long: 'd', country: 'e', invalid: 'f', type: 'g',
+    };
+    const result = validatePhone('8123 4567', 'NI', { type: 'mobile' });
+    const shown: string = result.valid ? result.phone.e164 : messages[result.error];
+    const code: unknown = 'NI';
+    const name: string | undefined = isCountryCode(code) ? country(code)?.name : undefined;
+    const price: string | null = parseMoney('C$ 5', 'NIO');
+    export const values = [shown, name, price, formatMoney('5', 'USD')];
+  `;
+  writeFileSync(join(workDir, 'consumer.ts'), consumer);
+  const tsc = resolve(packageDir, '../../node_modules/.bin/tsc');
+  for (const [module, moduleResolution] of [
+    ['esnext', 'bundler'],
+    ['node16', 'node16'],
+  ]) {
+    execFileSync(
+      tsc,
+      [
+        '--noEmit',
+        '--strict',
+        '--exactOptionalPropertyTypes',
+        '--skipLibCheck',
+        'false',
+        '--types',
+        '',
+        '--module',
+        module,
+        '--moduleResolution',
+        moduleResolution,
+        '--target',
+        'es2020',
+        'consumer.ts',
+      ],
+      { cwd: workDir, stdio: 'inherit' },
+    );
+  }
+  console.log(`Smoke test passed for ${tarball} (ESM, CJS, every subpath, and TypeScript with bundler and node16).`);
 } finally {
   rmSync(workDir, { recursive: true, force: true });
 }
