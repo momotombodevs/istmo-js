@@ -181,3 +181,153 @@ export function zonedDateTime(date: string, time: string, countryCode: CountryCo
   if (!match || hours > 23 || minutes > 59) throw new RangeError('Hora inválida: se espera HH:MM.');
   return `${date}T${pad(hours)}:${pad(minutes)}:00${target.utcOffset}`;
 }
+
+const MONTHS = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+] as const;
+const WEEKDAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'] as const;
+const TIME_TEXT = /^(\d{1,2})(?::(\d{2}))?\s*(?:([ap])\.?\s*m\.?)?$/i;
+const DAY_MS = 86_400_000;
+
+function dateParts(date: string): { year: number; month: number; day: number } {
+  requireIsoDate(date);
+  const [year = 0, month = 0, day = 0] = date.split('-').map(Number);
+  return { year, month, day };
+}
+
+function dayNumber(date: string): number {
+  const { year, month, day } = dateParts(date);
+  return Math.round(utcEpoch(year, month, day, 0, 0) / DAY_MS);
+}
+
+/**
+ * Reads a time as people write it: `14:30`, `2:30 pm`, `2:30 p. m.`, `2 pm`, `12 am`.
+ *
+ * @returns The time as `HH:MM` on a 24-hour clock, or `null` when it is not a valid time.
+ * @example parseTime('2:30 p. m.') // "14:30"
+ * @example parseTime('12 am') // "00:00"
+ * @example parseTime('25:00') // null
+ */
+export function parseTime(input: unknown): string | null {
+  if (typeof input !== 'string') return null;
+  const match = TIME_TEXT.exec(input.trim());
+  if (!match) return null;
+  const meridiem = match[3]?.toLowerCase();
+  const minutes = Number(match[2] ?? 0);
+  let hours = Number(match[1]);
+  if (minutes > 59) return null;
+  if (meridiem) {
+    if (hours < 1 || hours > 12) return null;
+    hours = (hours % 12) + (meridiem === 'p' ? 12 : 0);
+  } else if (hours > 23 || match[2] === undefined) {
+    return null;
+  }
+  return `${pad(hours)}:${pad(minutes)}`;
+}
+
+/**
+ * Writes a `HH:MM` time the way it is read in the region: `2:30 p. m.`, or `14:30` with `clock: '24h'`.
+ *
+ * @throws {RangeError} When the time is not a valid `HH:MM` time.
+ * @example formatTime('14:30') // "2:30 p. m."
+ * @example formatTime('00:05') // "12:05 a. m."
+ * @example formatTime('14:30', { clock: '24h' }) // "14:30"
+ */
+export function formatTime(time: string, options: { readonly clock?: '12h' | '24h' } = {}): string {
+  const match = typeof time === 'string' ? /^(\d{2}):(\d{2})$/.exec(time) : null;
+  const hours = Number(match?.[1]);
+  const minutes = Number(match?.[2]);
+  if (!match || hours > 23 || minutes > 59) throw new RangeError('Hora inválida: se espera HH:MM.');
+  if (options.clock === '24h') return time;
+  return `${hours % 12 || 12}:${pad(minutes)} ${hours < 12 ? 'a. m.' : 'p. m.'}`;
+}
+
+/**
+ * Writes a `YYYY-MM-DD` date in words, in Spanish.
+ *
+ * @throws {RangeError} When the date is not a valid `YYYY-MM-DD` date.
+ * @example formatLongDate('2026-11-24') // "martes 24 de noviembre de 2026"
+ * @example formatLongDate('2026-11-24', { weekday: false, year: false }) // "24 de noviembre"
+ */
+export function formatLongDate(
+  date: string,
+  options: { readonly weekday?: boolean; readonly year?: boolean } = {},
+): string {
+  const { year, month, day } = dateParts(date);
+  const weekday = WEEKDAYS[new Date(utcEpoch(year, month, day, 0, 0)).getUTCDay()];
+  const text = `${day} de ${MONTHS[month - 1]}${options.year === false ? '' : ` de ${year}`}`;
+  return options.weekday === false ? text : `${weekday} ${text}`;
+}
+
+/**
+ * Days from one `YYYY-MM-DD` date to another; negative when `to` is earlier.
+ *
+ * @throws {RangeError} When a date is not a valid `YYYY-MM-DD` date.
+ * @example daysBetween('2026-11-24', '2026-12-25') // 31
+ */
+export function daysBetween(from: string, to: string): number {
+  return dayNumber(to) - dayNumber(from);
+}
+
+/**
+ * Completed years between a birth date and another date, such as {@link today}.
+ *
+ * @throws {RangeError} When a date is not valid or `onDate` is before `birthDate`.
+ * @example ageOn('2008-11-25', '2026-11-24') // 17
+ * @example ageOn('2008-11-24', '2026-11-24') // 18
+ */
+export function ageOn(birthDate: string, onDate: string): number {
+  const birth = dateParts(birthDate);
+  const on = dateParts(onDate);
+  if (onDate < birthDate) throw new RangeError('La fecha es anterior al nacimiento.');
+  const birthdayPassed = on.month > birth.month || (on.month === birth.month && on.day >= birth.day);
+  return on.year - birth.year - (birthdayPassed ? 0 : 1);
+}
+
+/** What {@link formatDateInput} returns. */
+export interface DateInputText {
+  /** The text to show in the field, with `/` added while typing, e.g. `24/11`. */
+  readonly text: string;
+  /** The date as `YYYY-MM-DD` once it is complete and exists, otherwise `null`. */
+  readonly date: IsoDate | null;
+}
+
+/**
+ * Formats a `dd/mm/aaaa` date while it is being typed: adds `/` after the day and the month, and pads a one-digit
+ * day or month when the person types the `/` themselves (`1/` becomes `01/`).
+ *
+ * @example formatDateInput('2411') // { text: '24/11', date: null }
+ * @example formatDateInput('24112026') // { text: '24/11/2026', date: '2026-11-24' }
+ * @example formatDateInput('1/2/2026') // { text: '01/02/2026', date: '2026-02-01' }
+ */
+export function formatDateInput(text: unknown): DateInputText {
+  const typed = typeof text === 'string' ? text.slice(0, 32) : '';
+  const fields = ['', '', ''];
+  const limits = [2, 2, 4];
+  let field = 0;
+  let closedBySeparator = false;
+  for (const character of typed) {
+    if (/\d/.test(character)) {
+      if (field < 2 && fields[field]?.length === limits[field]) field++;
+      if ((fields[field]?.length ?? 0) < (limits[field] ?? 0)) fields[field] += character;
+      closedBySeparator = false;
+    } else if (/[/.-]/.test(character) && field < 2 && fields[field]) {
+      fields[field] = (fields[field] ?? '').padStart(2, '0');
+      field++;
+      closedBySeparator = true;
+    }
+  }
+  const shown = fields.filter(Boolean).join('/') + (closedBySeparator ? '/' : '');
+  return { text: shown, date: fields[2]?.length === 4 ? parseDate(shown) : null };
+}

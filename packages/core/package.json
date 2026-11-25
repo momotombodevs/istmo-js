@@ -101,13 +101,15 @@
         "default": "./dist/react.cjs"
       }
     },
+    "./flags/*.svg": "./flags/*.svg",
     "./package.json": "./package.json"
   },
   "files": [
     "dist",
     "README.md",
     "LICENSE",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "flags"
   ],
   "engines": {
     "node": ">=20"
@@ -122,7 +124,8 @@
     "prepublishOnly": "npm run typecheck && npm test && npm run build && npm run check:package && npm run test:package",
     "check:package": "publint && attw --pack .",
     "build:metadata": "node scripts/build-phone-metadata.mjs",
-    "check:metadata": "node scripts/build-phone-metadata.mjs --check"
+    "check:metadata": "node scripts/build-phone-metadata.mjs --check && node scripts/build-flags.mjs --check",
+    "build:flags": "node scripts/build-flags.mjs"
   },
   "repository": {
     "type": "git",
@@ -176,6 +179,7 @@
     "@types/node": "^22.20.5",
     "@types/react": "^19.3.1",
     "@vitest/coverage-v8": "^5.1.0",
+    "flag-icons": "7.6.0",
     "happy-dom": "^21.0.4",
     "publint": "^0.3.25",
     "react": "^19.3.1",

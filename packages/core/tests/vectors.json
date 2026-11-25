@@ -489,7 +489,7 @@
         "amount": "1234567.5",
         "currency": "CRC",
         "options": {},
-        "expected": "₡ 1 234 567,50"
+        "expected": "₡ 1,234,567.50"
       },
       {
         "amount": "999.99",
@@ -678,12 +678,12 @@
       {
         "input": "1.250,50",
         "currency": "NIO",
-        "expected": null
+        "expected": "1250.50"
       },
       {
         "input": "12.345",
         "currency": "NIO",
-        "expected": null
+        "expected": "12345.00"
       },
       {
         "input": "1,2,3",
@@ -693,7 +693,7 @@
       {
         "input": "12,34",
         "currency": "NIO",
-        "expected": null
+        "expected": "12.34"
       },
       {
         "input": ".5",
@@ -713,7 +713,7 @@
       {
         "input": "1,234.5",
         "currency": "CRC",
-        "expected": null
+        "expected": "1234.50"
       },
       {
         "input": "1111111111111111111111111111111",
@@ -769,6 +769,56 @@
         "input": "1 234,5",
         "currency": "CRC",
         "expected": "1234.50"
+      },
+      {
+        "input": "1.234.567,89",
+        "currency": "NIO",
+        "expected": "1234567.89"
+      },
+      {
+        "input": "1 234,5",
+        "currency": "NIO",
+        "expected": "1234.50"
+      },
+      {
+        "input": "1,234,567.89",
+        "currency": "CRC",
+        "expected": "1234567.89"
+      },
+      {
+        "input": "₡1.000",
+        "currency": "CRC",
+        "expected": "1000.00"
+      },
+      {
+        "input": "1,234,56",
+        "currency": "NIO",
+        "expected": null
+      },
+      {
+        "input": "1.234.5",
+        "currency": "NIO",
+        "expected": null
+      },
+      {
+        "input": "1,2345",
+        "currency": "NIO",
+        "expected": null
+      },
+      {
+        "input": "12.3456",
+        "currency": "NIO",
+        "expected": null
+      },
+      {
+        "input": "1,234 567",
+        "currency": "NIO",
+        "expected": null
+      },
+      {
+        "input": "1.234.567.89",
+        "currency": "NIO",
+        "expected": null
       }
     ],
     "minorUnits": [
@@ -1067,6 +1117,261 @@
       {
         "instant": "0000-01-01T00:00:00Z",
         "country": "NI"
+      }
+    ],
+    "parseTime": [
+      {
+        "input": "14:30",
+        "expected": "14:30"
+      },
+      {
+        "input": "2:30 pm",
+        "expected": "14:30"
+      },
+      {
+        "input": "2:30 p. m.",
+        "expected": "14:30"
+      },
+      {
+        "input": "2:30p.m.",
+        "expected": "14:30"
+      },
+      {
+        "input": "2 pm",
+        "expected": "14:00"
+      },
+      {
+        "input": "12 am",
+        "expected": "00:00"
+      },
+      {
+        "input": "12:15 pm",
+        "expected": "12:15"
+      },
+      {
+        "input": "0:00",
+        "expected": "00:00"
+      },
+      {
+        "input": "9:05 a.m.",
+        "expected": "09:05"
+      },
+      {
+        "input": "24:00",
+        "expected": null
+      },
+      {
+        "input": "13 pm",
+        "expected": null
+      },
+      {
+        "input": "0 am",
+        "expected": null
+      },
+      {
+        "input": "2:60",
+        "expected": null
+      },
+      {
+        "input": "2",
+        "expected": null
+      },
+      {
+        "input": "2:3",
+        "expected": null
+      },
+      {
+        "input": "abc",
+        "expected": null
+      },
+      {
+        "input": "",
+        "expected": null
+      }
+    ],
+    "formatTime": [
+      {
+        "time": "14:30",
+        "clock": "12h",
+        "expected": "2:30 p. m."
+      },
+      {
+        "time": "00:05",
+        "clock": "12h",
+        "expected": "12:05 a. m."
+      },
+      {
+        "time": "12:00",
+        "clock": "12h",
+        "expected": "12:00 p. m."
+      },
+      {
+        "time": "23:59",
+        "clock": "12h",
+        "expected": "11:59 p. m."
+      },
+      {
+        "time": "14:30",
+        "clock": "24h",
+        "expected": "14:30"
+      }
+    ],
+    "formatTimeErrors": ["24:00", "2:30", "14:60", ""],
+    "longDate": [
+      {
+        "date": "2026-11-24",
+        "weekday": true,
+        "year": true,
+        "expected": "martes 24 de noviembre de 2026"
+      },
+      {
+        "date": "2026-01-01",
+        "weekday": false,
+        "year": true,
+        "expected": "1 de enero de 2026"
+      },
+      {
+        "date": "2028-02-29",
+        "weekday": true,
+        "year": false,
+        "expected": "martes 29 de febrero"
+      },
+      {
+        "date": "0050-06-15",
+        "weekday": true,
+        "year": true,
+        "expected": "miércoles 15 de junio de 50"
+      }
+    ],
+    "daysBetween": [
+      {
+        "from": "2026-11-24",
+        "to": "2026-12-25",
+        "expected": 31
+      },
+      {
+        "from": "2026-12-25",
+        "to": "2026-11-24",
+        "expected": -31
+      },
+      {
+        "from": "2028-02-28",
+        "to": "2028-03-01",
+        "expected": 2
+      },
+      {
+        "from": "2026-12-31",
+        "to": "2027-01-01",
+        "expected": 1
+      }
+    ],
+    "ageOn": [
+      {
+        "birth": "2008-11-25",
+        "on": "2026-11-24",
+        "expected": 17
+      },
+      {
+        "birth": "2008-11-24",
+        "on": "2026-11-24",
+        "expected": 18
+      },
+      {
+        "birth": "2000-02-29",
+        "on": "2026-02-28",
+        "expected": 25
+      },
+      {
+        "birth": "2000-02-29",
+        "on": "2026-03-01",
+        "expected": 26
+      },
+      {
+        "birth": "2026-11-24",
+        "on": "2026-11-24",
+        "expected": 0
+      }
+    ],
+    "ageOnErrors": [
+      {
+        "birth": "2026-11-25",
+        "on": "2026-11-24"
+      },
+      {
+        "birth": "2026-02-30",
+        "on": "2026-11-24"
+      }
+    ],
+    "typing": [
+      {
+        "input": "2",
+        "text": "2",
+        "date": null
+      },
+      {
+        "input": "24",
+        "text": "24",
+        "date": null
+      },
+      {
+        "input": "24/",
+        "text": "24/",
+        "date": null
+      },
+      {
+        "input": "241",
+        "text": "24/1",
+        "date": null
+      },
+      {
+        "input": "2411",
+        "text": "24/11",
+        "date": null
+      },
+      {
+        "input": "2411/",
+        "text": "24/11/",
+        "date": null
+      },
+      {
+        "input": "24112026",
+        "text": "24/11/2026",
+        "date": "2026-11-24"
+      },
+      {
+        "input": "241120261",
+        "text": "24/11/2026",
+        "date": "2026-11-24"
+      },
+      {
+        "input": "1/",
+        "text": "01/",
+        "date": null
+      },
+      {
+        "input": "1/2/2026",
+        "text": "01/02/2026",
+        "date": "2026-02-01"
+      },
+      {
+        "input": "31022026",
+        "text": "31/02/2026",
+        "date": null
+      },
+      {
+        "input": "24-11-2026",
+        "text": "24/11/2026",
+        "date": "2026-11-24"
+      },
+      {
+        "input": "ab",
+        "text": "",
+        "date": null
+      },
+      {
+        "input": "9/9/99",
+        "text": "09/09/99",
+        "date": null
       }
     ]
   },
