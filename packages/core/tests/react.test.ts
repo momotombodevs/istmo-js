@@ -80,6 +80,25 @@ describe('usePhoneInput', () => {
     expect(() => result.current.setCountry('CR')).toThrow(RangeError);
   });
 
+  it('keeps the digits when the number does not belong to the new country', () => {
+    const { result } = renderHook(() => usePhoneInput({ defaultCountry: 'NI', countries: ['NI', 'SV'] }));
+    type(result, '88881234');
+    expect(result.current.value).toBe('8888 1234');
+    act(() => result.current.setCountry('SV'));
+    expect(result.current.value).toBe('88881234');
+    expect(result.current.phone).toBeNull();
+    act(() => result.current.setCountry('NI'));
+    expect(result.current.value).toBe('8888 1234');
+  });
+
+  it('formats for the new country when the number belongs to it', () => {
+    const { result } = renderHook(() => usePhoneInput({ defaultCountry: 'NI', countries: ['NI', 'SV'] }));
+    type(result, '70123456');
+    act(() => result.current.setCountry('SV'));
+    expect(result.current.value).toBe('7012 3456');
+    expect(result.current.phone?.e164).toBe('+50370123456');
+  });
+
   it('edits a stored number and resets to it', () => {
     const { result } = renderHook(() => usePhoneInput({ defaultCountry: 'NI', initialValue: '+50683123456' }));
     expect(result.current.value).toBe('8312 3456');

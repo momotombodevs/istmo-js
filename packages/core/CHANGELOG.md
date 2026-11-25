@@ -4,6 +4,13 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); v
 
 ## [Unreleased]
 
+## [0.2.1]
+
+### Corregido
+
+- `usePhoneInput`: al cambiar de país, el número solo se reformatea si es válido en el país nuevo; si no, quedan los dígitos sin agrupar (antes `8888 1234` pasaba a `888 8123 4` en El Salvador).
+- Los ejemplos del README y del TSDoc desestructuran el resultado de los hooks, porque con el React Compiler leer `field.value` da el error `react-hooks/refs`.
+
 ## [0.2.0]
 
 ### Añadido
@@ -21,6 +28,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/); v
 - Campos con React en `@momotombodevs/istmo/react`: `usePhoneInput`, `useMoneyInput` y `useDateInput`, con formato mientras se escribe y el cursor en su lugar. `formatPhoneInput` en `/phone-input`, `phoneExample` y la bandera de cada país (`country.flag`).
 - Subrutas `@momotombodevs/istmo/phone`, `/phone-input`, `/money`, `/dates`, `/regions` y `/react` para no cargar lo que no se usa en Metro.
 
-[Unreleased]: https://github.com/momotombodevs/istmo-js/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/momotombodevs/istmo-js/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/momotombodevs/istmo-js/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/momotombodevs/istmo-js/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/momotombodevs/istmo-js/releases/tag/v0.1.0
