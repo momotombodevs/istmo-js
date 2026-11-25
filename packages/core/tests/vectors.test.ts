@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
   acceptsCurrency,
+  ageOn,
   type CountryCode,
   type CurrencyCode,
   country,
+  daysBetween,
   formatDate,
+  formatDateInput,
+  formatLongDate,
   formatMoney,
   formatPhoneInput,
+  formatTime,
   fromMinorUnits,
   type IsoDate,
   isCountryCode,
@@ -18,6 +23,7 @@ import {
   parseDate,
   parseMoney,
   parsePhone,
+  parseTime,
   phoneExample,
   today,
   toMinorUnits,
@@ -142,6 +148,38 @@ describe('dates', () => {
     const zoned = zonedDateTime(date as IsoDate, time, country as CountryCode);
     expect(zoned).toBe(expected);
     expect(new Date(zoned).toISOString()).toBe(utc.replace('Z', '.000Z'));
+  });
+
+  it.each(vectors.dates.parseTime)('reads the time "$input" as $expected', ({ input, expected }) => {
+    expect(parseTime(input)).toBe(expected);
+  });
+
+  it.each(vectors.dates.formatTime)('writes $time on a $clock clock', ({ time, clock, expected }) => {
+    expect(formatTime(time, { clock: clock as '12h' | '24h' })).toBe(expected);
+  });
+
+  it.each(vectors.dates.formatTimeErrors)('refuses to write the time "%s"', (time) => {
+    expect(() => formatTime(time)).toThrow(RangeError);
+  });
+
+  it.each(vectors.dates.longDate)('writes $date in words', ({ date, weekday, year, expected }) => {
+    expect(formatLongDate(date, { weekday, year })).toBe(expected);
+  });
+
+  it.each(vectors.dates.daysBetween)('counts days from $from to $to', ({ from, to, expected }) => {
+    expect(daysBetween(from, to)).toBe(expected);
+  });
+
+  it.each(vectors.dates.ageOn)('ages $birth on $on', ({ birth, on, expected }) => {
+    expect(ageOn(birth, on)).toBe(expected);
+  });
+
+  it.each(vectors.dates.ageOnErrors)('refuses the age of $birth on $on', ({ birth, on }) => {
+    expect(() => ageOn(birth, on)).toThrow(RangeError);
+  });
+
+  it.each(vectors.dates.typing)('formats "$input" while typing', ({ input, text, date }) => {
+    expect(formatDateInput(input)).toEqual({ text, date });
   });
 
   it.each(vectors.dates.zonedErrors)('refuses $date $time in $country', ({ date, time, country }) => {

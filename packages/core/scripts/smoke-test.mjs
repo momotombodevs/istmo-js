@@ -26,7 +26,8 @@ try {
     import { parseDate } from '@momotombodevs/istmo/dates';
     import { countries } from '@momotombodevs/istmo/regions';
     import { formatPhoneInput } from '@momotombodevs/istmo/phone-input';
-    import { usePhoneInput } from '@momotombodevs/istmo/react';
+    import { useDateInput, useMoneyInput, usePhoneInput } from '@momotombodevs/istmo/react';
+    import { formatLongDate } from '@momotombodevs/istmo/dates';
     const checks = [
       formatMoney('1250.5', 'NIO') === 'C$\\u00a01,250.50',
       parsePhone('8123 4567', 'NI')?.e164 === '+50581234567',
@@ -37,6 +38,10 @@ try {
       countries.length === 7,
       formatPhoneInput('812345', 'NI').text === '8123 45',
       typeof usePhoneInput === 'function',
+      typeof useMoneyInput === 'function',
+      typeof useDateInput === 'function',
+      formatLongDate('2026-11-24') === 'martes 24 de noviembre de 2026',
+      import.meta.resolve('@momotombodevs/istmo/flags/ni.svg').endsWith('/flags/ni.svg'),
     ];
     if (checks.includes(false)) throw new Error('ESM smoke test failed: ' + JSON.stringify(checks));
   `;
@@ -58,9 +63,12 @@ try {
     import { type PhoneError, formatMoney, validatePhone } from '@momotombodevs/istmo';
     import { parseMoney } from '@momotombodevs/istmo/money';
     import { isCountryCode, country } from '@momotombodevs/istmo/regions';
-    import { type PhoneInput, usePhoneInput } from '@momotombodevs/istmo/react';
+    import { type DateInput, type MoneyInput, type PhoneInput, useDateInput, useMoneyInput, usePhoneInput } from '@momotombodevs/istmo/react';
     export function useField(): PhoneInput {
       return usePhoneInput({ defaultCountry: 'NI', type: 'mobile', countries: ['NI', 'CR'] });
+    }
+    export function useOtherFields(): [MoneyInput, DateInput] {
+      return [useMoneyInput({ currency: 'NIO', min: '1' }), useDateInput({ min: '2026-11-24' })];
     }
     const messages: Record<PhoneError, string> = {
       format: 'a', missing_country: 'b', too_short: 'c', too_long: 'd', country: 'e', invalid: 'f', type: 'g',

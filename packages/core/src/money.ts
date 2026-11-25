@@ -1,4 +1,4 @@
-import type { Currency, CurrencyCode } from './regions';
+import type { CurrencyCode } from './regions';
 import { requireCurrency } from './require';
 
 /** How {@link formatMoney} labels the amount. */
@@ -76,7 +76,7 @@ function group(integer: string, separator: string): string {
  * @param amount Decimal text with `.` (`"1250.5"`, as stored in a `decimal` column) or a safe number.
  * @throws {RangeError} When the currency is not supported or the amount is not a decimal.
  * @example formatMoney('1250.5', 'NIO') // "C$ 1,250.50"
- * @example formatMoney('1234567.5', 'CRC') // "₡ 1 234 567,50"
+ * @example formatMoney('1234567.5', 'CRC') // "₡ 1,234,567.50"
  * @example formatMoney('180', 'NIO', { decimals: 'auto' }) // "C$ 180"
  */
 export function formatMoney(amount: Amount, currencyCode: CurrencyCode, options: FormatMoneyOptions = {}): string {
@@ -93,25 +93,32 @@ function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
 }
 
-function amountPattern(target: Currency): RegExp {
-  const spaceGroup = SPACES.includes(target.groupSeparator);
-  const groupSeparator = spaceGroup ? `[${SPACES}]` : escapeRegExp(target.groupSeparator);
-  const decimalSeparator = spaceGroup
-    ? `[${escapeRegExp(target.decimalSeparator)}.]`
-    : escapeRegExp(target.decimalSeparator);
-  return new RegExp(`^(\\d{1,3}(?:${groupSeparator}\\d{3})+|\\d+)(?:${decimalSeparator}(\\d+))?$`);
+const GROUPS = [',', '\\.', `[${SPACES}]`];
+
+function amountPatterns(decimals: number): readonly RegExp[] {
+  const fraction = decimals > 0 ? `(?:[.,](\\d{1,${decimals}}))?` : '';
+  return [
+    new RegExp(`^(\\d+)${fraction}$`),
+    ...GROUPS.map((group) => {
+      const decimal =
+        decimals > 0 ? `(?:${group === ',' ? '\\.' : group === '\\.' ? ',' : '[.,]'}(\\d{1,${decimals}}))?` : '';
+      return new RegExp(`^(\\d{1,3}(?:${group}\\d{3})+)${decimal}$`);
+    }),
+  ];
 }
 
 /**
  * Reads an amount typed by a person and returns it as decimal text with exactly the currency's decimals,
- * ready to send to the server. Accepts an optional symbol or code of that currency (any case), the
- * currency's group and decimal separators, and for currencies grouped with spaces (CRC) also `.` as decimal.
- * Negative amounts are rejected.
+ * ready to send to the server. Accepts an optional symbol or code of that currency (any case) and the three ways
+ * amounts are written in the region: `1,234.50`, `1.234,50` and `1 234,50`. A separator followed by one or two
+ * digits at the end is the decimal one; the others must all be the same and group exactly three digits, so
+ * `12.345` is twelve thousand. Negative amounts are rejected.
  *
  * @returns The normalized amount, or `null` when the text is not a valid amount in that currency.
  * @throws {RangeError} When the currency is not supported.
  * @example parseMoney('C$ 1,250.50', 'NIO') // "1250.50"
- * @example parseMoney('12.345', 'NIO') // null, too many decimals
+ * @example parseMoney('₡1.234,5', 'CRC') // "1234.50"
+ * @example parseMoney('12.345', 'NIO') // "12345.00"
  * @example parseMoney('$20', 'NIO') // null, symbol of another currency
  */
 export function parseMoney(input: unknown, currencyCode: CurrencyCode): string | null {
@@ -127,12 +134,14 @@ export function parseMoney(input: unknown, currencyCode: CurrencyCode): string |
     }
   }
 
-  const match = amountPattern(target).exec(text);
+  const match = amountPatterns(target.decimals)
+    .map((pattern) => pattern.exec(text))
+    .find((result) => result !== null);
   if (!match) return null;
 
   const integer = (match[1] ?? '').replace(/\D/g, '').replace(/^0+(?=\d)/, '');
   const fraction = match[2] ?? '';
-  if (fraction.length > target.decimals || integer.length > MAX_INTEGER_DIGITS) return null;
+  if (integer.length > MAX_INTEGER_DIGITS) return null;
 
   return target.decimals > 0 ? `${integer}.${fraction.padEnd(target.decimals, '0')}` : integer;
 }
@@ -166,4 +175,40 @@ export function fromMinorUnits(minor: number, currencyCode: CurrencyCode): strin
   const integer = digits.slice(0, digits.length - target.decimals);
   const fraction = target.decimals > 0 ? `.${digits.slice(-target.decimals)}` : '';
   return `${minor < 0 ? '-' : ''}${integer}${fraction}`;
+}
+
+/** What {@link formatMoneyInput} returns. */
+export interface MoneyInputText {
+  /** The text to show in the field, grouped while typing, e.g. `1,250.5`. */
+  readonly text: string;
+  /** The amount as decimal text with every decimal of the currency (`"1250.50"`), or `null` while there is none. */
+  readonly amount: string | null;
+}
+
+/**
+ * Formats an amount while it is being typed, for the value of a text field. Keeps digits and the first `.` as the
+ * decimal point, groups thousands with `,`, and cuts the decimals the currency does not have.
+ *
+ * @throws {RangeError} When the currency is not supported.
+ * @example formatMoneyInput('1250.5', 'NIO') // { text: '1,250.5', amount: '1250.50' }
+ * @example formatMoneyInput('.', 'NIO') // { text: '0.', amount: '0.00' }
+ */
+export function formatMoneyInput(text: unknown, currencyCode: CurrencyCode): MoneyInputText {
+  const target = requireCurrency(currencyCode);
+  const typed = typeof text === 'string' ? text.slice(0, MAX_INPUT_LENGTH) : '';
+  const point = typed.indexOf('.');
+  const hasPoint = point >= 0 && target.decimals > 0;
+  const integerDigits = (hasPoint ? typed.slice(0, point) : typed).replace(/\D/g, '');
+  const fraction = hasPoint
+    ? typed
+        .slice(point + 1)
+        .replace(/\D/g, '')
+        .slice(0, target.decimals)
+    : '';
+  if (!integerDigits && !hasPoint) return { text: '', amount: null };
+
+  const integer = (integerDigits.replace(/^0+(?=\d)/, '') || '0').slice(0, MAX_INTEGER_DIGITS);
+  const shown = `${group(integer, target.groupSeparator)}${hasPoint ? `${target.decimalSeparator}${fraction}` : ''}`;
+  const amount = target.decimals > 0 ? `${integer}.${fraction.padEnd(target.decimals, '0')}` : integer;
+  return { text: shown, amount };
 }

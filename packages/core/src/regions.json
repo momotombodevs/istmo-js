@@ -65,7 +65,14 @@
     }
   ],
   "currencies": [
-    { "code": "GTQ", "name": "Quetzal", "symbol": "Q", "decimals": 2, "decimalSeparator": ".", "groupSeparator": "," },
+    {
+      "code": "GTQ",
+      "name": "Quetzal",
+      "symbol": "Q",
+      "decimals": 2,
+      "decimalSeparator": ".",
+      "groupSeparator": ","
+    },
     {
       "code": "BZD",
       "name": "Dólar beliceño",
@@ -74,17 +81,38 @@
       "decimalSeparator": ".",
       "groupSeparator": ","
     },
-    { "code": "HNL", "name": "Lempira", "symbol": "L", "decimals": 2, "decimalSeparator": ".", "groupSeparator": "," },
-    { "code": "NIO", "name": "Córdoba", "symbol": "C$", "decimals": 2, "decimalSeparator": ".", "groupSeparator": "," },
+    {
+      "code": "HNL",
+      "name": "Lempira",
+      "symbol": "L",
+      "decimals": 2,
+      "decimalSeparator": ".",
+      "groupSeparator": ","
+    },
+    {
+      "code": "NIO",
+      "name": "Córdoba",
+      "symbol": "C$",
+      "decimals": 2,
+      "decimalSeparator": ".",
+      "groupSeparator": ","
+    },
     {
       "code": "CRC",
       "name": "Colón costarricense",
       "symbol": "₡",
       "decimals": 2,
-      "decimalSeparator": ",",
-      "groupSeparator": "\u00a0"
+      "decimalSeparator": ".",
+      "groupSeparator": ","
     },
-    { "code": "PAB", "name": "Balboa", "symbol": "B/.", "decimals": 2, "decimalSeparator": ".", "groupSeparator": "," },
+    {
+      "code": "PAB",
+      "name": "Balboa",
+      "symbol": "B/.",
+      "decimals": 2,
+      "decimalSeparator": ".",
+      "groupSeparator": ","
+    },
     {
       "code": "USD",
       "name": "Dólar estadounidense",

@@ -24,7 +24,7 @@ En Expo use `npx expo install @momotombodevs/istmo`. Funciona en Expo Go.
 - [Fechas y hora local](#fechas-y-hora-local)
 - [Países y monedas](#países-y-monedas)
 - [Qué enviar al servidor](#qué-enviar-al-servidor)
-- [Montos con Inertia](#montos-con-inertia)
+- [Campos de monto y de fecha con React](#campos-de-monto-y-de-fecha-con-react)
 
 ## Importar solo lo que usa
 
@@ -32,13 +32,13 @@ Metro (React Native) no descarta el código que no se usa, así que importe desd
 
 | Importación | Contiene | Tamaño minificado |
 |-------------|----------|-------------------|
-| `@momotombodevs/istmo/money` | monedas | ~5 kB |
-| `@momotombodevs/istmo/dates` | fechas y hora local | ~5 kB |
+| `@momotombodevs/istmo/money` | monedas | ~6 kB |
+| `@momotombodevs/istmo/dates` | fechas, horas y hora local | ~7 kB |
 | `@momotombodevs/istmo/regions` | países, monedas y banderas | ~3 kB |
 | `@momotombodevs/istmo/phone` | validar teléfonos (incluye libphonenumber) | ~49 kB |
 | `@momotombodevs/istmo/phone-input` | formato mientras se escribe | ~68 kB |
-| `@momotombodevs/istmo/react` | `usePhoneInput` (incluye `/phone` y `/phone-input`) | ~84 kB |
-| `@momotombodevs/istmo` | todo menos `/react` | ~88 kB |
+| `@momotombodevs/istmo/react` | `usePhoneInput`, `useMoneyInput` y `useDateInput` (incluye todo lo anterior) | ~91 kB |
+| `@momotombodevs/istmo` | todo menos `/react` | ~91 kB |
 
 Los teléfonos usan [libphonenumber-js](https://gitlab.com/catamphetamine/libphonenumber-js) con la metadata recortada a los siete países (3 kB en lugar de 157 kB).
 
@@ -109,7 +109,7 @@ phoneExample('PA').national;                     // "6123-4567": para el placeho
 
 ## Campo de teléfono con React
 
-`usePhoneInput` maneja todo el campo: formato mientras se escribe, país elegido, cambio de país al escribir `+` y un código, borrado correcto de los espacios que agrega el formato, ejemplo para el placeholder y validación. No dibuja nada; el selector de bandera y el campo los pone su app con sus componentes. Sirve igual en React Native y en la web.
+`usePhoneInput` maneja todo el campo: formato mientras se escribe sin que el cursor salte al final, país elegido, cambio de país al escribir `+` y un código, borrado correcto de los espacios que agrega el formato, ejemplo para el placeholder y validación. No dibuja nada; el selector de bandera y el campo los pone su app con sus componentes. Sirve igual en React Native y en la web.
 
 `react` es una dependencia opcional (React 18 o posterior): solo hace falta si importa `@momotombodevs/istmo/react`.
 
@@ -140,6 +140,7 @@ export function PhoneField({ onChange }: { onChange: (e164: string | null) => vo
           <Text>{field.country.flag} +{field.country.callingCode}</Text>
         </Pressable>
         <TextInput
+          ref={field.ref}
           value={field.value}
           onChangeText={field.onChangeText}
           onBlur={() => {
@@ -190,6 +191,7 @@ export function PhoneField() {
         ))}
       </select>
       <input
+        ref={field.ref}
         type="tel"
         inputMode="tel"
         autoComplete="tel"
@@ -206,7 +208,7 @@ export function PhoneField() {
 
 | Valor | Qué es |
 |-------|--------|
-| `value`, `onChangeText`, `onBlur` | para conectar al campo de texto |
+| `ref`, `value`, `onChangeText`, `onBlur` | para conectar al campo de texto; `ref` mantiene el cursor donde está la persona cuando el formato agrega o quita espacios |
 | `country`, `countries`, `setCountry` | país elegido (con `flag`, `name`, `callingCode`) y los que se pueden elegir |
 | `placeholder` | número de ejemplo del país elegido |
 | `phone` | el número válido (envíe `phone.e164`), o `null` mientras esté vacío o no sea válido |
@@ -215,7 +217,24 @@ export function PhoneField() {
 
 Opciones: `defaultCountry` (obligatoria), `type` y `countries` como en `validatePhone`, e `initialValue` con un número E.164 guardado para editarlo (`'+50581234567'`). El campo vacío no es un error: si el teléfono es obligatorio, compruebe `phone !== null` al enviar.
 
-Las banderas son emoji (`country.flag`). Se ven en iOS, Android y macOS; los navegadores de Windows muestran las dos letras del código en su lugar.
+Las banderas son emoji (`country.flag`). Se ven en iOS, Android y macOS; los navegadores de Windows muestran las dos letras del código en su lugar. Para la web, el paquete trae las 7 banderas como SVG en `@momotombodevs/istmo/flags/<código>.svg`, tomadas de [flag-icons](https://github.com/lipis/flag-icons) (licencia MIT, incluida en `flags/LICENSE`). Son archivos, no JavaScript: Vite los importa como una URL y el navegador los carga aparte.
+
+```tsx
+import type { CountryCode } from '@momotombodevs/istmo/regions';
+import bz from '@momotombodevs/istmo/flags/bz.svg';
+import cr from '@momotombodevs/istmo/flags/cr.svg';
+import gt from '@momotombodevs/istmo/flags/gt.svg';
+import hn from '@momotombodevs/istmo/flags/hn.svg';
+import ni from '@momotombodevs/istmo/flags/ni.svg';
+import pa from '@momotombodevs/istmo/flags/pa.svg';
+import sv from '@momotombodevs/istmo/flags/sv.svg';
+
+const flags: Record<CountryCode, string> = { BZ: bz, CR: cr, GT: gt, HN: hn, NI: ni, PA: pa, SV: sv };
+
+export function Flag({ code }: { code: CountryCode }) {
+  return <img src={flags[code]} alt="" width={20} height={15} />;
+}
+```
 
 ## Monedas
 
@@ -225,7 +244,7 @@ GTQ, BZD, HNL, NIO, CRC, PAB y USD. Los montos se pasan como texto decimal (`"12
 import { formatMoney, fromMinorUnits, parseMoney, toMinorUnits } from '@momotombodevs/istmo/money';
 
 formatMoney('1250.5', 'NIO');                         // "C$ 1,250.50"
-formatMoney('1234567.5', 'CRC');                      // "₡ 1 234 567,50"
+formatMoney('1234567.5', 'CRC');                      // "₡ 1,234,567.50"
 formatMoney('180', 'NIO', { decimals: 'auto' });      // "C$ 180"
 formatMoney('1250.5', 'NIO', { display: 'code' });    // "NIO 1,250.50"
 formatMoney('1250.5', 'NIO', { display: 'none' });    // "1,250.50"
@@ -234,7 +253,9 @@ formatMoney('-15', 'USD');                            // "-$ 15.00"
 parseMoney('C$ 1,250.50', 'NIO'); // "1250.50"
 parseMoney('1,250', 'NIO');       // "1250.00"
 parseMoney('₡1 234,5', 'CRC');    // "1234.50"
-parseMoney('12.345', 'NIO');      // null: más decimales de los que tiene la moneda
+parseMoney('1.250,50', 'NIO');    // "1250.50": también con punto de miles y coma decimal
+parseMoney('12.345', 'NIO');      // "12345.00": tres dígitos después del separador son miles
+parseMoney('12.3456', 'NIO');     // null
 parseMoney('$20', 'NIO');         // null: símbolo de otra moneda
 parseMoney('-50', 'USD');         // null: no acepta negativos
 
@@ -243,7 +264,7 @@ fromMinorUnits(1234, 'USD');   // "12.34"
 ```
 
 - `formatMoney` redondea la mitad hacia afuera sobre el texto decimal: `1.005` da `1.01` y `2.345` da `2.35`. Entre el símbolo y el número va un espacio de no separación (` `), para que no queden en líneas distintas.
-- `parseMoney` acepta el símbolo o el código de esa moneda (sin importar mayúsculas), sus separadores de miles y de decimales, y en colones también el punto como decimal. En colones, el separador de miles puede ser un espacio, un espacio de no separación o un espacio fino; un salto de línea o un tabulador no. Devuelve siempre los decimales completos de la moneda. No acepta negativos, porque está pensado para lo que escribe una persona.
+- `parseMoney` acepta el símbolo o el código de esa moneda (sin importar mayúsculas) y las tres formas en que se escriben montos en la región: `1,234.50`, `1.234,50` y `1 234,50`. Un separador seguido de uno o dos dígitos al final es el decimal; los demás tienen que ser todos iguales y agrupar de a tres dígitos, por eso `12.345` son doce mil. Devuelve siempre los decimales completos de la moneda. No acepta negativos, porque está pensado para lo que escribe una persona.
 - La parte entera admite hasta 30 dígitos (`MAX_INTEGER_DIGITS`) y `parseMoney` ignora textos de más de 64 caracteres, así un texto pegado muy largo no congela la pantalla.
 
 | Moneda | Ejemplo |
@@ -252,9 +273,19 @@ fromMinorUnits(1234, 'USD');   // "12.34"
 | BZD, dólar beliceño | `BZ$ 1,250.50` |
 | HNL, lempira | `L 1,250.50` |
 | NIO, córdoba | `C$ 1,250.50` |
-| CRC, colón | `₡ 1 250,50` |
+| CRC, colón | `₡ 1,250.50` |
 | PAB, balboa | `B/. 1,250.50` |
 | USD, dólar | `$ 1,250.50` |
+
+Para un campo de texto, `formatMoneyInput` agrupa los miles mientras se escribe:
+
+```ts
+import { formatMoneyInput } from '@momotombodevs/istmo/money';
+
+formatMoneyInput('1250.5', 'NIO').text;   // "1,250.5"
+formatMoneyInput('1250.5', 'NIO').amount; // "1250.50"
+formatMoneyInput('.', 'NIO').text;        // "0."
+```
 
 ## Fechas y hora local
 
@@ -282,6 +313,25 @@ zonedDateTime('2026-11-24', '14:30', 'NI');    // "2026-11-24T14:30:00-06:00"
 | `localDateTime(país, instante?)` | `{ date, time, iso }` en ese país |
 | `zonedDateTime(fecha, "HH:MM", país)` | ISO 8601 con el desfase del país, para enviar una fecha y hora elegidas (una reserva, una entrega) |
 
+Horas, fechas en palabras, edad y días entre fechas:
+
+```ts
+import { ageOn, daysBetween, formatDateInput, formatLongDate, formatTime, parseTime } from '@momotombodevs/istmo/dates';
+
+parseTime('2:30 p. m.');                   // "14:30"
+parseTime('12 am');                        // "00:00"
+formatTime('14:30');                       // "2:30 p. m."
+formatTime('14:30', { clock: '24h' });     // "14:30"
+formatLongDate('2026-11-24');              // "martes 24 de noviembre de 2026"
+formatLongDate('2026-11-24', { weekday: false, year: false }); // "24 de noviembre"
+daysBetween('2026-11-24', '2026-12-25');   // 31
+ageOn('2008-11-24', '2026-11-24');         // 18
+formatDateInput('24112026').text;          // "24/11/2026": formato mientras se escribe
+formatDateInput('1/2/2026').date;          // "2026-02-01"
+```
+
+`parseTime` acepta `14:30`, `2:30 pm`, `2:30 p. m.`, `2 pm` y `12 am`; una hora sin minutos ni `am`/`pm` (`2`) es ambigua y da `null`. `formatTime` escribe `a. m.` y `p. m.`, como se leen en la región.
+
 `instante` es un `Date`, milisegundos, o texto ISO 8601 **con** `Z` o desfase, con `T` y `Z` en mayúscula (`2026-11-24T20:30:00Z`). La librería lee el texto ella misma, sin `Date.parse`, así que Hermes y V8 dan el mismo resultado. Lanza `RangeError` con:
 
 - un texto sin desfase, como `2026-11-24` o `2026-11-24T10:00`, porque su significado dependería de la zona del dispositivo;
@@ -296,7 +346,7 @@ country('NI');
 // { code: 'NI', name: 'Nicaragua', callingCode: '505', currency: 'NIO', currencies: ['NIO', 'USD'],
 //   timezone: 'America/Managua', utcOffset: '-06:00' }
 
-currency('CRC'); // { code: 'CRC', name: 'Colón costarricense', symbol: '₡', decimals: 2, decimalSeparator: ',', groupSeparator: ' ' }
+currency('CRC'); // { code: 'CRC', name: 'Colón costarricense', symbol: '₡', decimals: 2, decimalSeparator: '.', groupSeparator: ',' }
 
 acceptsCurrency('NI', 'USD'); // true
 acceptsCurrency('NI', 'GTQ'); // false
@@ -320,28 +370,69 @@ La validación en la app es para dar buena experiencia; el servidor siempre tien
 | Fecha | el resultado de `parseDate` (`YYYY-MM-DD`) |
 | Fecha y hora elegidas | el resultado de `zonedDateTime` |
 
-## Montos con Inertia
+## Campos de monto y de fecha con React
 
-Un monto en un formulario de Inertia que se envía ya normalizado:
+`useMoneyInput` y `useDateInput` funcionan igual que `usePhoneInput`: formatean mientras se escribe, mantienen el cursor donde está la persona si les pasa `ref`, muestran el error después de que el campo pierde el foco y no dibujan nada.
+
+```tsx
+import { Text, TextInput, View } from 'react-native';
+import { today } from '@momotombodevs/istmo/dates';
+import { useDateInput, useMoneyInput } from '@momotombodevs/istmo/react';
+
+export function DeliveryFields() {
+  const tip = useMoneyInput({ currency: 'NIO', max: '1000' });
+  const day = useDateInput({ min: today('NI') });
+
+  return (
+    <View>
+      <View style={{ flexDirection: 'row' }}>
+        <Text>{tip.currency.symbol}</Text>
+        <TextInput ref={tip.ref} value={tip.value} onChangeText={tip.onChangeText} onBlur={tip.onBlur} keyboardType="decimal-pad" />
+      </View>
+      {tip.error === 'max' && <Text>La propina máxima es C$ 1,000.</Text>}
+
+      <TextInput
+        ref={day.ref}
+        value={day.value}
+        onChangeText={day.onChangeText}
+        onBlur={day.onBlur}
+        placeholder={day.placeholder}
+        keyboardType="number-pad"
+      />
+      {day.error === 'min' && <Text>Elija hoy o un día después.</Text>}
+      {day.error === 'format' && <Text>Escriba la fecha como dd/mm/aaaa.</Text>}
+    </View>
+  );
+}
+```
+
+| Hook | Opciones | Devuelve |
+|------|----------|----------|
+| `useMoneyInput` | `currency`, `initialValue`, `min`, `max` | `amount` (`"1250.50"`, listo para enviar), `currency` (con `symbol`), `error`: `format`, `min` o `max` |
+| `useDateInput` | `initialValue` (`YYYY-MM-DD`), `min`, `max` | `date` (`YYYY-MM-DD`), `placeholder` (`dd/mm/aaaa`), `error`: `format`, `min` o `max` |
+
+`useMoneyInput` toma la `,` del teclado decimal en español como punto decimal (en Android, el teclado `decimal-pad` muestra `,` según el idioma), lee un monto pegado en cualquiera de las tres formas y completa los decimales al salir del campo (`1,250.5` → `1,250.50`).
+
+En la web, con Inertia, el monto se envía ya normalizado:
 
 ```tsx
 import { useForm } from '@inertiajs/react';
-import { parseMoney } from '@momotombodevs/istmo/money';
+import { useMoneyInput } from '@momotombodevs/istmo/react';
 
 export function PriceForm() {
-  const form = useForm({ price: '' });
+  const price = useMoneyInput({ currency: 'NIO', min: '1' });
+  const form = useForm({});
 
   return (
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        const price = parseMoney(form.data.price, 'NIO');
-        if (price === null) return form.setError('price', 'Escriba un monto como 1,250.50');
-        form.transform(() => ({ price, currency: 'NIO' })).post('/prices');
+        if (price.amount === null) return;
+        form.transform(() => ({ price: price.amount, currency: 'NIO' })).post('/prices');
       }}
     >
-      <input inputMode="decimal" value={form.data.price} onChange={(event) => form.setData('price', event.target.value)} />
-      {form.errors.price && <p>{form.errors.price}</p>}
+      <input ref={price.ref} inputMode="decimal" value={price.value} onChange={(event) => price.onChangeText(event.target.value)} onBlur={price.onBlur} />
+      {price.error && <p>Escriba un monto de C$ 1 o más.</p>}
     </form>
   );
 }
