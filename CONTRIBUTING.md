@@ -8,19 +8,12 @@ npm test
 npm run test:tz        # las pruebas en Tokio, Kiritimati y Los Ángeles
 npm run build
 npm run check:package  # publint y attw
-npm run test:package   # instala el paquete empacado y lo usa con ESM, CJS y cada subruta
+npm run test:package   # instala el paquete empacado y lo usa con ESM, CJS, cada subruta y TypeScript estricto
 ```
 
-## Datos y casos de prueba compartidos
+## Casos de prueba
 
-Este paquete y el de PHP, [`momotombo/istmo`](https://github.com/momotombodevs/istmo), tienen que validar igual. Por eso comparten dos archivos, que deben quedar idénticos byte a byte:
-
-| Este repo | Repo de PHP |
-|-----------|-------------|
-| `packages/core/src/regions.json` | `data/regions.json` |
-| `packages/core/tests/vectors.json` | `tests/vectors.json` |
-
-Para cambiar un comportamiento, agregue o cambie el caso en `vectors.json`, implemente el cambio en los dos lenguajes, copie el archivo al otro repo y corra las pruebas en los dos.
+`packages/core/tests/vectors.json` describe el comportamiento con datos, sin código: entrada y resultado esperado. Para cambiar un comportamiento, cambie o agregue primero el caso ahí y véalo fallar. El archivo no depende del lenguaje, para que otra implementación (por ejemplo, una en PHP) pueda correr los mismos casos más adelante.
 
 ## Metadata de teléfonos
 
@@ -30,7 +23,7 @@ Para cambiar un comportamiento, agregue o cambie el caso en `vectors.json`, impl
 npm run build:metadata --workspace packages/core
 ```
 
-`libphonenumber-js` está fijada a una versión exacta. Al actualizarla, regenere la metadata, corra las pruebas aquí y en el repo de PHP (que usa la librería de Google) y anote la versión en el CHANGELOG. El CI falla si la metadata no corresponde a la versión instalada.
+`libphonenumber-js` está fijada a una versión exacta. Al actualizarla, regenere la metadata, corra las pruebas y anote la versión en el CHANGELOG. El CI falla si la metadata no corresponde a la versión instalada.
 
 ## Publicar
 
